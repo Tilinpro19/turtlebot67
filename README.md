@@ -1,6 +1,6 @@
-# Guía de trabajo diario · TurtleBot 4 (ROS 2 Jazzy)
+# Guía de trabajo diario · TurtleBot 4 Lite (ROS 2 Jazzy)
 
-Guía práctica para trabajar con **cualquier TurtleBot 4** (Lite o Standard) en el laboratorio de
+Guía práctica para trabajar con el **TurtleBot 4 Lite** en el laboratorio de
 Computer Vision, con **ROS 2 Jazzy sobre Ubuntu 24.04 Noble**. Supone el escenario normal: el robot
 **ya está configurado y conectado a la red del laboratorio** (`Lab_Computech_<X>_5G`).
 
@@ -27,7 +27,7 @@ Convenciones: **[PC]** = tu PC de desarrollo (Ubuntu nativo, WSL o VM) · **[ROB
 | `<IP_ROBOT>` | IP del robot en la red del laboratorio |
 | `<DOMAIN_ID>` | `ROS_DOMAIN_ID` de **tu** robot (uno distinto por equipo, entre 0 y 101) |
 | `<WIFI_SSID>` | Red del laboratorio: `Lab_Computech_<X>_5G`, donde `<X>` es el número del laboratorio (p. ej. `Lab_Computech_3_5G`) |
-| `<WIFI_PASSWORD>` | Contraseña del router del laboratorio (dada por el docente) |
+| `<WIFI_PASSWORD>` | Contraseña del router del laboratorio: `Computech2025!` |
 
 ---
 
@@ -143,11 +143,11 @@ export ROS_DOMAIN_ID=<DOMAIN_ID>          # Cambia por el ID asignado a tu robot
 
 ## 5. Conectar con el robot
 
-1. Conecta tu laptop a la red **Wi-Fi del laboratorio**, `Lab_Computech_<X>_5G` (o la de 2.4 GHz del mismo router) con la contraseña del router `<WIFI_PASSWORD>`. Windows dirá "sin internet": es normal.
-2. **Obtener la `<IP_ROBOT>`:**
-   - **Forma principal:** Mirar la pantalla OLED del TurtleBot (si es Standard) o consultar la tabla de clientes en el panel del router.
-   - **Alternativa:** `arp -a` buscando la MAC de Raspberry Pi (prefijo `d8:3a:dd`, `dc:a6:32` o `e4:5f:01`).
-   - *(Si tu red admite mDNS activo: `ssh ubuntu@turtlebot4.local`).*
+1. Conecta tu laptop a la red **Wi-Fi del laboratorio**, `Lab_Computech_<X>_5G` (p. ej. `Lab_Computech_3_5G` o la de 2.4 GHz del mismo router) con la contraseña `Computech2025!`. Windows dirá "sin internet": es totalmente normal.
+2. **Obtener la `<IP_ROBOT>` (TurtleBot 4 Lite no tiene pantalla):**
+   - **Forma principal:** Consultar la tabla de clientes DHCP en el panel del router (busca la MAC de la Raspberry Pi).
+   - **Por comando en PC:** `arp -a` buscando la MAC del robot (prefijo `d8:3a:dd`, `dc:a6:32` o `e4:5f:01`; en el Lite del lab 3 es `d8:3a:dd:7e:5c:9c` y su IP habitual `192.168.0.104`).
+   - *(Si tu red tiene mDNS activo: `ssh ubuntu@turtlebot4.local`).*
 
 ### 5.1 Sincronización horaria (Red sin internet)
 Dado que el router del laboratorio **no tiene internet**, la Raspberry Pi no puede usar NTP y arranca con la hora desfasada en cada encendido. Esto corrompe los timestamps de `tf` y la odometría:
@@ -181,7 +181,7 @@ El servicio `turtlebot4.service` normalmente arranca el bringup de forma automá
 ```bash
 systemctl is-active turtlebot4.service    # Debe responder "active"
 ```
-*(Si no estuviera activo: `ros2 launch turtlebot4_bringup lite.launch.py` o `standard.launch.py`).*
+*(Si no estuviera activo: `ros2 launch turtlebot4_bringup lite.launch.py`).*
 
 ### 6.1 Checklist rápido de comunicación
 En tu PC ejecuta:
