@@ -26,10 +26,11 @@ Valores que debes sustituir:
 ## Índice
 
 0. [Estructura del repositorio](#0-estructura-del-repositorio)
-1. [Máquina virtual con Ubuntu 24.04](#1-máquina-virtual-con-ubuntu-2404)
+1. [Entorno de desarrollo (WSL2 / nativo / VirtualBox)](#1-entorno-de-desarrollo-ubuntu-2404)
 2. [Preparar Ubuntu e instalar ROS 2 Jazzy](#2-preparar-ubuntu-e-instalar-ros-2-jazzy)
 3. [Paquetes del TurtleBot 4 en la VM](#3-paquetes-del-turtlebot-4-en-la-vm)
 4. [Configurar y conectar el TurtleBot 4](#4-configurar-y-conectar-el-turtlebot-4)
+   — incluye la **conexión diaria con `tb4_connect.sh`** ([§4.5](#45-conexión-diaria-tb4_connectsh-y-tb4_checksh))
 5. [Sincronizar `ROS_DOMAIN_ID` y probar talker/listener](#5-sincronizar-ros_domain_id-y-probar-talkerlistener)
 6. [Sensores y bringup](#6-sensores-y-bringup)
 7. [Movimiento y teleoperación (`TwistStamped`)](#7-movimiento-y-teleoperación-twiststamped)
@@ -44,6 +45,8 @@ Valores que debes sustituir:
 turtleclaude4/
 ├── README.md               ← este documento
 ├── TROUBLESHOOTING.md      ← fallos frecuentes y checklist de diagnóstico
+├── tb4_connect.sh          ← conecta la terminal al robot (multicast → peers automático)
+├── tb4_check.sh            ← checklist de diagnóstico automático (PC y, opcional, robot)
 ├── teleop_wasd.py          ← teleop por teclado (Twist/TwistStamped automático)
 ├── ver_camara_tb4.py       ← visor OAK-D (/oakd/rgb/preview/image_raw)
 ├── ver_lidar_tb4.py        ← visor 2D del LiDAR (/scan)
@@ -58,7 +61,56 @@ ejemplo, no como configuración.
 
 ---
 
-## 1. Máquina virtual con Ubuntu 24.04
+## 1. Entorno de desarrollo (Ubuntu 24.04)
+
+Lo único imprescindible es **Ubuntu 24.04 con ROS 2 Jazzy**, en la misma red que el
+robot. Dónde corra ese Ubuntu es elección tuya:
+
+| Opción | GPU para visión (CUDA, YOLO…) | Red con el robot | Ventanas (rviz, rqt, `cv2.imshow`) | Recomendado para |
+|---|---|---|---|---|
+| **A. WSL2** (Windows) | ✅ CUDA con el driver NVIDIA de Windows | ⚠️ `mirrored` + `ROS_STATIC_PEERS` (lo automatiza `tb4_connect.sh`) | ✅ WSLg | **Uso diario en Windows** |
+| **B. Ubuntu nativo** (dual boot) | ✅ Completa | ✅ Sin ajustes | ✅ | Máximo rendimiento y menos problemas DDS |
+| **C. VirtualBox** (guía del curso) | ❌ Sin CUDA, 3D lento | ⚠️ Adaptador puente | ⚠️ rviz/rqt lentos | Seguir el curso al pie de la letra |
+
+Para Computer Vision, el procesamiento de imagen ocurre en tu PC: con modelos de
+detección conviene tener GPU, y VirtualBox no puede usarla. Elige **A** o **B** si
+puedes.
+
+### 1.A WSL2 (Windows 10/11)
+
+1. PowerShell **como administrador**:
+   ```powershell
+   wsl --install -d Ubuntu-24.04
+   ```
+2. Red espejo, imprescindible para DDS. Crea `C:\Users\<usuario>\.wslconfig`:
+   ```ini
+   [wsl2]
+   networkingMode=mirrored
+   ```
+   y aplica con `wsl --shutdown`.
+3. Firewall de Hyper-V: permite tráfico entrante a WSL (PowerShell **administrador**):
+   ```powershell
+   Set-NetFirewallHyperVVMSetting -Name '{40E0AC32-46A5-438A-A0B2-2B479E8F2E90}' -DefaultInboundAction Allow
+   ```
+4. Marca la red Wi-Fi del laboratorio como **Privada** en Windows
+   (Configuración → Red → Wi-Fi → la red → Tipo de perfil).
+5. Abre Ubuntu (`wsl -d Ubuntu-24.04`) y sigue desde la [sección 2](#2-preparar-ubuntu-e-instalar-ros-2-jazzy).
+
+> 💡 **Ventanas gráficas.** WSLg ya viene con Windows 11: `rqt_image_view`, `rviz2` y
+> `cv2.imshow` abren ventanas sin configurar nada.
+> **GPU.** Con una NVIDIA, instala solo el driver de Windows y comprueba `nvidia-smi`
+> dentro de WSL; **no** instales drivers NVIDIA dentro de Ubuntu.
+
+> 💡 **Multicast en WSL.** Aun en modo `mirrored`, el descubrimiento por multicast es
+> poco fiable (verificado: 0 tópicos en 30 s sin peers, descubrimiento en ~1 s con
+> `ROS_STATIC_PEERS`). `tb4_connect.sh` (§4.5) lo detecta y lo corrige solo.
+
+### 1.B Ubuntu nativo
+
+Instala Ubuntu 24.04 desde la [ISO oficial](https://releases.ubuntu.com/24.04) (dual
+boot o equipo dedicado) y sigue en la [sección 2](#2-preparar-ubuntu-e-instalar-ros-2-jazzy).
+
+### 1.C VirtualBox (flujo del curso)
 
 1. Instala [VirtualBox](https://www.virtualbox.org).
 2. Crea una VM: Linux → Ubuntu (64-bit), **RAM ≥ 4 GB** (recomendado 8 GB),
@@ -74,9 +126,7 @@ ejemplo, no como configuración.
 > adaptador en **Adaptador puente** sobre la interfaz Wi-Fi real. Con **NAT** (por
 > defecto) el ping al robot puede funcionar, pero DDS no descubre los tópicos.
 
-> 💡 **Alternativa WSL2 (Windows).** Funciona con `networkingMode=mirrored` en
-> `C:\Users\<usuario>\.wslconfig` (sección `[wsl2]`) seguido de `wsl --shutdown`, y
-> normalmente requiere `ROS_STATIC_PEERS` (§5). Detalle en `docs/tarjeta_offline_lab.md`.
+En el resto de la guía, **"VM"** significa tu entorno de desarrollo, sea cual sea.
 
 ---
 
@@ -192,6 +242,106 @@ sudo reboot
 > 💡 En **Update** revisa que el firmware del Create 3 corresponda a **Jazzy**; un
 > firmware de otra distro produce tópicos que aparecen pero no funcionan bien.
 
+### 4.4 Vías de conexión física
+
+El flujo del curso usa la Wi-Fi del laboratorio. Hay dos vías más para cuando no está
+disponible:
+
+| Vía | Cuándo | Cómo |
+|---|---|---|
+| **Wi-Fi del laboratorio** (por defecto) | Siempre que se pueda | PC y robot en `<WIFI_SSID>` |
+| **Cable Ethernet directo** | Wi-Fi caída, sin multicast o robot "perdido" | Cable PC ↔ Raspberry Pi. La imagen del TB4 trae `eth0` fija en `192.168.185.3/24`. En la PC: IP `192.168.185.10`, máscara `255.255.255.0`, sin puerta de enlace. `ssh ubuntu@192.168.185.3` |
+| **Hotspot del celular** | Fuera del laboratorio | Añade la red al robot como conexión *extra* (no reemplaces la del lab); PC y robot al hotspot |
+
+Para agregar una red sin perder la del laboratorio (en el robot):
+
+```bash
+sudo nmcli connection add type wifi ifname wlan0 con-name respaldo \
+  ssid "<SSID>" wifi-sec.key-mgmt wpa-psk wifi-sec.psk "<CLAVE>" \
+  connection.autoconnect yes connection.autoconnect-priority 5 \
+  802-11-wireless.powersave 2
+```
+
+> 💡 Evita redes con **aislamiento de clientes** (invitados, Wi-Fi universitaria
+> abierta, algunos hotspots): el ping puede funcionar a medias y DDS no.
+
+### 4.5 Conexión diaria: `tb4_connect.sh` y `tb4_check.sh`
+
+Hecha la configuración inicial (§4.1–4.3 y §5), la forma recomendada de conectar
+cada día es:
+
+```bash
+cd ~/turtleclaude4        # o la ruta del repo (en WSL: /mnt/c/Users/<usuario>/turtleclaude4)
+source tb4_connect.sh <IP_ROBOT> <DOMAIN_ID>
+```
+
+`tb4_connect.sh` hace en un paso lo que antes era manual:
+
+1. Carga ROS 2 Jazzy y exporta `ROS_DOMAIN_ID` y `RMW_IMPLEMENTATION=rmw_fastrtps_cpp`.
+2. Hace ping al robot.
+3. Prueba el descubrimiento por **multicast**. Si no ve los 4 tópicos clave
+   (`/scan`, `/odom`, `/cmd_vel`, `/oakd/rgb/preview/image_raw`), prueba con
+   **`ROS_STATIC_PEERS`** y se queda con el modo que funcione mejor.
+4. Guarda la configuración que funcionó en `~/.tb4_robot`.
+
+```bash
+source tb4_connect.sh                    # reconectar al último robot guardado
+source tb4_connect.sh <IP> <ID> peers    # forzar modo (auto | multicast | peers)
+source tb4_connect.sh --off              # limpiar (dominio 0, sin peers)
+```
+
+Para que **cada terminal nueva** quede configurada al instante (sin repetir pruebas):
+
+```bash
+echo '[ -f ~/.tb4_robot ] && source ~/.tb4_robot' >> ~/.bashrc
+```
+
+Si algo no va, `tb4_check.sh` ejecuta el checklist de
+[TROUBLESHOOTING § 3](TROUBLESHOOTING.md#3-checklist-rápido-de-diagnóstico) y te
+indica la sección a consultar:
+
+```bash
+./tb4_check.sh                 # desde la PC: entorno, red, puertos, tópicos, datos, tipo de /cmd_vel
+./tb4_check.sh --robot         # además entra por SSH: dominio, servicio, Create 3, OAK-D, LiDAR
+```
+
+Ninguno de los dos mueve ni reconfigura el robot.
+
+### 4.6 Modos de descubrimiento DDS
+
+| Modo | Cómo se activa | Cuándo usarlo |
+|---|---|---|
+| **Multicast** (por defecto) | Nada que hacer | Ubuntu nativo o VirtualBox en puente, en una red que deja pasar multicast |
+| **Peers estáticos** (Jazzy) | `export ROS_STATIC_PEERS=<IP_ROBOT>` (o `tb4_connect.sh`) | WSL, redes que bloquean multicast. Solo hace falta en la PC |
+| **Discovery Server** | `turtlebot4-setup` → *ROS Setup* → *Discovery Server*, más la configuración de la PC según el [manual oficial](https://turtlebot.github.io/turtlebot4-user-manual/setup/discovery_server.html) | Muchos robots en una misma red o redes muy restrictivas. Cambia la configuración del robot: acuérdalo con el docente |
+
+### 4.7 SSH cómodo
+
+En `~/.ssh/config` de la PC (en Windows: `C:\Users\<usuario>\.ssh\config`):
+
+```
+Host tb4
+  HostName <IP_ROBOT>
+  User ubuntu
+  ServerAliveInterval 15
+  ServerAliveCountMax 4
+```
+
+Con eso basta `ssh tb4`. Para entrar sin contraseña: `ssh-keygen -t ed25519` y luego
+`ssh-copy-id tb4`.
+
+> 💡 Portal del Create 3 sin acceso directo al 8080: `ssh -L 8080:192.168.186.2:80 tb4`
+> y abre `http://localhost:8080`.
+
+### 4.8 Varios robots en el laboratorio
+
+- **Un `ROS_DOMAIN_ID` distinto por robot o grupo.** Si no, todos ven todos los
+  tópicos y un `/cmd_vel` puede mover el robot de otro grupo.
+- Lleva un registro (IP, ID, grupo). `~/.tb4_robot` guarda el último robot; si cambias
+  de robot, vuelve a ejecutar `source tb4_connect.sh <IP> <ID>`.
+- Con muchos robots en la misma Wi-Fi, el tráfico de cámara satura la red: usa
+  `/compressed` (§8).
+
 ---
 
 ## 5. Sincronizar `ROS_DOMAIN_ID` y probar talker/listener
@@ -251,7 +401,8 @@ melodía alegre de arranque del robot (“pu puru pupu”).
 > export ROS_STATIC_PEERS=<IP_ROBOT>
 > ros2 daemon stop
 > ```
-> Resolvió el caso WSL documentado en `docs/`.
+> Resolvió el caso WSL documentado en `docs/`. `source tb4_connect.sh` (§4.5) lo
+> detecta y lo aplica solo.
 
 ---
 
@@ -384,6 +535,8 @@ Scripts independientes (sin paquete colcon) para ejecutar en la VM con ROS 2 car
 
 | Script | Qué hace | Uso |
 |---|---|---|
+| `tb4_connect.sh` | Configura la terminal para un robot; multicast → peers automático; guarda en `~/.tb4_robot` | `source tb4_connect.sh <IP> <ID>` |
+| `tb4_check.sh` | Checklist automático con ✅/❌ y referencia a TROUBLESHOOTING | `./tb4_check.sh [IP] [--robot]` |
 | `teleop_wasd.py` | Teleop WASD; detecta si `/cmd_vel` es `Twist` o `TwistStamped`; se detiene solo si sueltas las teclas | `python3 teleop_wasd.py` · `--dry` (no publica) |
 | `ver_camara_tb4.py` | Visor OpenCV de la OAK-D con FPS | `python3 ver_camara_tb4.py --scale 3` |
 | `ver_lidar_tb4.py` | Vista cenital de `/scan`; marca en rojo obstáculos frontales < 0.5 m | `python3 ver_lidar_tb4.py --range 6 --rot 90` |

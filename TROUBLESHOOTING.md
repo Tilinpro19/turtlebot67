@@ -25,7 +25,8 @@ Revisa en orden. Cada paso descarta una capa.
 | 6 | Multicast | **[ROBOT]** `ros2 multicast receive` · **[PC]** `ros2 multicast send` | El robot recibe `Hello World!` |
 
 Si falla el paso **6**, la red bloquea multicast (WSL, Wi-Fi universitaria o de invitados,
-"aislamiento de clientes"). Usa peers estáticos (Jazzy):
+"aislamiento de clientes"). `source tb4_connect.sh <IP_ROBOT> <DOMAIN_ID>` lo detecta y
+aplica la solución solo. A mano, usa peers estáticos (Jazzy):
 
 ```bash
 # [PC]
@@ -160,6 +161,10 @@ ssh -t ubuntu@<IP_ROBOT> "sudo date -u -s '$(date -u +%Y-%m-%dT%H:%M:%S)'"
 ## 3. Checklist rápido de diagnóstico
 
 Ejecútalo completo **antes de escalar un incidente** y adjunta la salida.
+
+**Versión automática:** `./tb4_check.sh <IP_ROBOT> --robot` ejecuta estos mismos pasos,
+marca cada uno como `[ok]` / `[FALLA]` e indica la sección de esta guía a consultar
+(README §4.5). A continuación, la versión manual.
 
 ```bash
 # ---------- [PC] ----------
