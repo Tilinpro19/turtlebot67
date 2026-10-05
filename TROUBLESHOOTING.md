@@ -235,7 +235,7 @@ sudo apt update
 ## 5. Escalar
 
 Si el checklist completo no resuelve el problema, contacta al responsable del
-laboratorio (Cortijo) con: salida del §3, `ROS_DOMAIN_ID` usado, red (SSID) y tipo de
+laboratorio (Cortijo) o a Thiago 6️⃣7️⃣ con: salida del §3, `ROS_DOMAIN_ID` usado, red (SSID) y tipo de
 máquina (VirtualBox / WSL / nativo).
 
 ---
