@@ -3,8 +3,10 @@ Visor de la camara OAK-D del TurtleBot 4 desde la laptop, dentro de WSL.
 Lee el topic de imagen por ROS. No toca nada en el robot.
 
 Uso (WSL, laptop en la red del robot):
-  python3 ver_camara_tb4.py
-  python3 ver_camara_tb4.py --topic /oakd/rgb/preview/image_raw --scale 3
+  python3 ver_camara_tb4.py                       # JPEG comprimido (recomendado por Wi-Fi)
+  python3 ver_camara_tb4.py --topic /oakd/rgb/preview/image_raw --scale 3   # imagen cruda
+
+Si el topic termina en /compressed se usa sensor_msgs/CompressedImage; si no, sensor_msgs/Image.
 
 Salir: tecla q / Esc, o cerrar la ventana.
 Nota: el video por Wi-Fi puede verse entrecortado; es normal si la senal es floja.
@@ -15,7 +17,7 @@ import time
 import numpy as np
 import rclpy
 from rclpy.qos import qos_profile_sensor_data
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import CompressedImage, Image
 
 CHANNELS = {"rgb8": 3, "bgr8": 3, "rgba8": 4, "bgra8": 4, "mono8": 1}
 
@@ -41,7 +43,7 @@ def to_bgr(msg):
 
 def main():
     ap = argparse.ArgumentParser(description="Visor camara TurtleBot 4")
-    ap.add_argument("--topic", default="/oakd/rgb/preview/image_raw")
+    ap.add_argument("--topic", default="/oakd/rgb/preview/image_raw/compressed")
     ap.add_argument("--scale", type=float, default=2.0, help="factor de aumento")
     args = ap.parse_args()
 
@@ -54,7 +56,13 @@ def main():
     def on_image(m):
         state["msg"], state["new"] = m, True
 
-    node.create_subscription(Image, args.topic, on_image, qos_profile_sensor_data)
+    compressed = args.topic.endswith("/compressed")
+    if compressed:
+        decode = lambda m: cv2.imdecode(np.frombuffer(bytes(m.data), np.uint8), cv2.IMREAD_COLOR)
+    else:
+        decode = to_bgr
+    node.create_subscription(CompressedImage if compressed else Image, args.topic, on_image,
+                             qos_profile_sensor_data)
 
     win = "Camara TurtleBot 4"
     cv2.namedWindow(win)
@@ -65,7 +73,9 @@ def main():
             rclpy.spin_once(node, timeout_sec=0.05)
             if state["new"]:
                 state["new"] = False
-                img = to_bgr(state["msg"])
+                img = decode(state["msg"])
+                if img is None:  # JPEG corrupto (paquete perdido por Wi-Fi)
+                    continue
                 if args.scale != 1.0:
                     img = cv2.resize(img, None, fx=args.scale, fy=args.scale,
                                      interpolation=cv2.INTER_LINEAR)

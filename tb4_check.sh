@@ -73,8 +73,17 @@ esac
 echo "== 4. Llegan datos"
 for t in /scan /odom /oakd/rgb/preview/image_raw; do
   has "$t" || continue
-  if [ -n "$(timeout 10 ros2 topic echo --once --no-arr "$t" 2>/dev/null)" ]; then
+  MSG=$(timeout 10 ros2 topic echo --once --no-arr "$t" 2>/dev/null)
+  if [ -n "$MSG" ]; then
     ok "dato recibido en $t"
+    # Sin internet la Pi arranca con la hora mal en cada encendido (no tiene RTC)
+    SEC=$(printf '%s\n' "$MSG" | grep -m1 -E '^ +sec:' | awk '{print $2}')
+    if [ -n "$SEC" ]; then
+      D=$((SEC - $(date +%s)))
+      if [ "${D#-}" -gt 5 ]; then
+        fail "reloj desfasado ${D}s en $t (stamp vs hora de esta PC)" "copia la hora de la PC al robot (TROUBLESHOOTING 2.4)"
+      fi
+    fi
   else
     case "$t" in
       /oakd/*) fail "sin datos en $t" "camara caida, o Wi-Fi sin ancho de banda: prueba .../compressed (TROUBLESHOOTING 2.1)" ;;

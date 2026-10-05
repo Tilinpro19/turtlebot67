@@ -338,7 +338,7 @@ Ajustes que la imagen de fábrica no trae y que conviene hacer una vez:
 | **Nombre único** | Varios robots llamados `turtlebot4` hacen ambiguo `turtlebot4.local` | `sudo hostnamectl set-hostname tb4-<grupo>`, luego reiniciar |
 | **Cambiar la contraseña por defecto** | `turtlebot4` es pública; cualquiera en la red puede entrar | `passwd` y comunicar la nueva al equipo |
 | **Clave SSH de la PC** | Entrar sin contraseña; la necesitan `tb4_check.sh --robot` y los scripts | **[PC]** `ssh-keygen -t ed25519 && ssh-copy-id ubuntu@<IP_ROBOT>` |
-| **Hora (NTP)** | La Pi no tiene RTC; con la hora mal, tf y la sincronización de sensores fallan | `sudo timedatectl set-ntp true`. Sin internet, ver [TROUBLESHOOTING § 2.4](TROUBLESHOOTING.md#24-reloj-desfasado-tf--fusión-de-sensores) |
+| **Hora (NTP)** | La Pi no tiene RTC; con la hora mal, tf y la sincronización de sensores fallan | Router del laboratorio sin internet: copiar la hora de la PC **en cada sesión**, ver [TROUBLESHOOTING § 2.4](TROUBLESHOOTING.md#24-reloj-desfasado-tf--fusión-de-sensores). Con internet: `sudo timedatectl set-ntp true` |
 | **Wi-Fi sin ahorro de energía** | Evita cortes de SSH y de DDS | §1.5 |
 | **Firmware del Create 3** | Debe ser el de Jazzy | §2.2 |
 | **Mando Bluetooth** | Un mando emparejado publica en `/cmd_vel` y compite con tu teleop | `turtlebot4-setup` → Bluetooth Setup; desempareja si no se usa |

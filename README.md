@@ -52,7 +52,8 @@ Manual oficial: [TurtleBot 4 User Manual](https://turtlebot.github.io/turtlebot4
 **Anexos**
 [A. Comparativa de entornos](#anexo-a-comparativa-de-entornos) ·
 [B. Descubrimiento DDS y varios robots](#anexo-b-descubrimiento-dds-y-varios-robots) ·
-[C. Estructura del repositorio](#anexo-c-estructura-del-repositorio)
+[C. Estructura del repositorio](#anexo-c-estructura-del-repositorio) ·
+[D. Trabajar desde Mac](#anexo-d-trabajar-desde-mac)
 
 ---
 
@@ -80,7 +81,8 @@ Manual oficial: [TurtleBot 4 User Manual](https://turtlebot.github.io/turtlebot4
 > ping al robot puede funcionar, pero ROS 2 no descubre los tópicos.
 
 > ➕ **Extra: otros entornos.** Funciona igual con **Ubuntu 24.04 nativo**, o con
-> **WSL 2** en Windows 11 (configúralo según la [sección 5](#5--entorno-wsl-2)). En el resto
+> **WSL 2** en Windows 11 (configúralo según la [sección 5](#5--entorno-wsl-2)). Desde
+> **Mac**, ver el [Anexo D](#anexo-d-trabajar-desde-mac). En el resto
 > de la guía, "VM" significa tu entorno, sea cual sea.
 
 ---
@@ -477,7 +479,7 @@ Se ejecutan en la VM/WSL con ROS cargado (§6 o `tb4_connect.sh`):
 
 | Script | Para qué | Uso |
 |---|---|---|
-| `ver_camara_tb4.py` | Visor OpenCV de la OAK-D con FPS. Base para tus nodos de visión | `python3 ver_camara_tb4.py` · `--scale 3` · `--topic <tópico>` |
+| `ver_camara_tb4.py` | Visor OpenCV de la OAK-D con FPS. Usa `/compressed` por defecto. Base para tus nodos de visión | `python3 ver_camara_tb4.py` · `--scale 3` · `--topic <tópico>` (cruda: `.../image_raw`) |
 | `ver_lidar_tb4.py` | Vista cenital de `/scan`; marca en rojo los obstáculos frontales a menos de 0.5 m | `python3 ver_lidar_tb4.py` · `--range 6` · `--rot 90` |
 | `teleop_wasd.py` | Teleop WASD; detecta solo si `/cmd_vel` es `Twist` o `TwistStamped`; se detiene al soltar las teclas | `python3 teleop_wasd.py` · `--dry` (no publica) |
 
@@ -488,6 +490,29 @@ girando · `u`/`j` velocidad lineal ± · `i`/`k` velocidad angular ± · espaci
 > Los scripts usan QoS *sensor data* (best effort) para la cámara y el LiDAR. Si no
 > reciben nada en 8 s, avisan por consola: el problema es de red o de DDS (§7 y §8), no
 > del script.
+
+**En tus propios nodos de visión:**
+
+- **QoS.** Suscríbete con `qos_profile_sensor_data`. Con la QoS por defecto (*reliable*), si
+  el publicador es *best effort* la suscripción no da ningún error pero nunca recibe
+  frames. Con `ros2 topic info -v <tópico>` ves la QoS del publicador.
+
+  ```python
+  from rclpy.qos import qos_profile_sensor_data
+  from sensor_msgs.msg import CompressedImage
+
+  self.create_subscription(
+      CompressedImage,
+      '/oakd/rgb/preview/image_raw/compressed',
+      self.image_callback,
+      qos_profile_sensor_data,
+  )
+  # en el callback: cv2.imdecode(np.frombuffer(msg.data, np.uint8), cv2.IMREAD_COLOR)
+  ```
+
+- **Ancho de banda.** Los 3 robots comparten el mismo router. Por Wi-Fi usa siempre
+  `/compressed`. La imagen cruda (`/image_raw`) resérvala para nodos que corran a bordo de
+  la Pi: 3 flujos crudos a la vez saturan la red y se caen `/scan` y `/odom`.
 
 ---
 
@@ -525,8 +550,8 @@ girando · `u`/`j` velocidad lineal ± · `i`/`k` velocidad angular ± · espaci
 | **Ubuntu nativo** | Funciona sin ajustes | Completa | Nativas |
 
 - **Windows 10** no admite `networkingMode=mirrored`: usa VirtualBox o Ubuntu nativo.
-- **Mac con Apple Silicon:** VirtualBox no es práctico; usa UTM o Parallels con Ubuntu
-  24.04 ARM64 en modo puente.
+- **Mac:** VM con Ubuntu 24.04 en modo puente (UTM/Parallels con ARM64 en Apple Silicon).
+  Pasos en el [Anexo D](#anexo-d-trabajar-desde-mac).
 - **Visión pesada** (redes neuronales): requiere GPU, disponible en nativo y en WSL 2.
 
 ## Anexo B. Descubrimiento DDS y varios robots
@@ -558,3 +583,65 @@ turtleclaude4/
 ├── docs/                      ← bitácora de un robot concreto (valores de ejemplo)
 └── _legacy/                   ← mando PS4 y planes antiguos (solo referencia)
 ```
+
+## Anexo D. Trabajar desde Mac
+
+ROS 2 Jazzy y los paquetes del TurtleBot 4 no tienen soporte en macOS: se trabaja dentro
+de una **VM con Ubuntu 24.04**. Una vez dentro, la guía es la misma desde la
+[sección 2](#2-preparar-ubuntu-para-ros-2-jazzy).
+
+**¿Qué Mac tengo?** Menú Apple → *Acerca de este Mac*: "Chip Apple M…" es Apple Silicon;
+"Procesador Intel" es Intel.
+
+### D.1 Mac con Apple Silicon (M1–M4)
+
+1. Instala **[UTM](https://mac.getutm.app)** (gratis) o Parallels Desktop.
+2. Descarga **Ubuntu 24.04 Desktop ARM64**
+   ([`ubuntu-24.04.x-desktop-arm64.iso`](https://cdimage.ubuntu.com/releases/24.04/release/)).
+   La ISO amd64 normal **no** sirve.
+3. En UTM: *Crear nueva VM* → **Virtualizar** (no "Emular") → Linux → la ISO.
+   RAM 8 GB, 4 núcleos, disco 30 GB o más.
+4. **Red en modo puente**, antes de arrancar: VM → Editar → Red →
+   *Modo de red*: **Puente (avanzado)**, interfaz **en0** (Wi-Fi). En Parallels:
+   Hardware → Red → Origen: **Wi-Fi** (puente).
+   Si macOS pide permiso de **Red local** para UTM/Parallels, acéptalo.
+5. Instala Ubuntu. Después, para portapapeles y ajuste de pantalla en UTM:
+   ```bash
+   sudo apt install -y spice-vdagent spice-webdavd
+   ```
+6. Opcional: en UTM → Pantalla, elige `virtio-gpu-gl-pci` para que rviz2 vaya más fluido.
+7. Sigue las secciones [2](#2-preparar-ubuntu-para-ros-2-jazzy) a
+   [4](#4-instalar-paquetes-del-turtlebot-4) y [6](#6--variables-de-entorno-en-ros-2-jazzy).
+   ROS 2 Jazzy publica paquetes ARM64: los comandos son idénticos.
+
+### D.2 Mac con Intel
+
+Igual que la [sección 1](#1-máquina-virtual-con-ubuntu-2404): VirtualBox (o UTM) con la
+ISO normal de Ubuntu 24.04 y **Adaptador puente** sobre Wi-Fi.
+
+### D.3 Conectar con el robot
+
+- Comprueba que la VM tiene una IP de la **misma red que el robot** (`ip a`). Si ves
+  `10.0.2.x` o `192.168.64.x`, sigue en NAT: revisa el paso 4.
+- Usa `source tb4_connect.sh <IP_ROBOT>` ([§7.2](#72--conexión-con-tb4_connectsh)): si el
+  multicast no pasa por el puente Wi-Fi de macOS (ocurre a menudo), cambia solo a
+  `ROS_STATIC_PEERS`.
+- Algunas redes (Wi-Fi corporativa o universitaria) bloquean el modo puente. En ese caso,
+  usa una red propia con el robot (router del laboratorio o hotspot).
+
+### D.4 Sin VM: solo SSH
+
+Para comprobaciones rápidas no hace falta la VM. Desde la **Terminal de macOS**:
+
+```bash
+ssh ubuntu@<IP_ROBOT>
+```
+
+Dentro del robot ya están ROS 2 y los paquetes: puedes ejecutar `ros2 topic list`, la
+teleop por teclado o los scripts sin ventanas. Lo que abre ventanas (rviz2,
+`rqt_image_view`, `cv2.imshow`) necesita la VM.
+
+### D.5 Limitaciones
+
+- Sin GPU NVIDIA/CUDA: la visión pesada con redes neuronales va lenta o no es viable.
+- rviz2 y rqt funcionan, pero algo más lentos que en Ubuntu nativo.

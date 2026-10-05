@@ -156,12 +156,16 @@ Arreglos:
 La Pi no tiene RTC y el Create 3 conserva su propio reloj: los *stamps* pueden marcar otra
 fecha (visto en el laboratorio: `/odom` con fecha de un año antes). Afecta a tf, `message_filters` y a la fusión de sensores.
 
+En el laboratorio el router **no tiene internet**, así que NTP no funciona y la Pi arranca
+con la hora mal **en cada encendido**. `tb4_check.sh` lo detecta (`reloj desfasado`).
+Copia la hora de la PC al robot al empezar la sesión:
+
 ```bash
-# [ROBOT] con internet:
-sudo timedatectl set-ntp true
-# sin internet, copia la hora de la PC:
+# [PC] (asegúrate antes de que la hora de tu PC es correcta)
 ssh -t ubuntu@<IP_ROBOT> "sudo date -u -s '$(date -u +%Y-%m-%dT%H:%M:%S)'"
 ```
+
+Si el robot tiene internet (otra red), basta con `sudo timedatectl set-ntp true` **[ROBOT]**.
 
 ---
 
