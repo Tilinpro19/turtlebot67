@@ -1,4 +1,4 @@
-# Configuración inicial del TurtleBot 4
+# Configuración inicial · TurtleBot 4 (ROS 2 Jazzy)
 
 ← [Volver al README (trabajo diario)](README.md) · [TROUBLESHOOTING](TROUBLESHOOTING.md)
 
@@ -10,13 +10,16 @@ Standard con **ROS 2 Jazzy / Ubuntu 24.04**.
 laboratorio, faltan paquetes o sensores, el `ROS_DOMAIN_ID` del robot no es el
 asignado, o el bringup no arranca solo.
 
-Convenciones: **[PC]** = tu VM/WSL · **[ROBOT]** = terminal SSH en la Raspberry Pi.
+Convenciones: **[PC]** = tu PC de desarrollo (Ubuntu nativo, WSL o VM) · **[ROBOT]** = terminal SSH en la Raspberry Pi.
 
 | Marcador | Significado |
 |---|---|
 | `<IP_ROBOT>` | IP que el robot obtiene en la red del laboratorio |
 | `<DOMAIN_ID>` | `ROS_DOMAIN_ID` asignado a este robot (0–101, único en el laboratorio) |
-| `<WIFI_SSID>` / `<WIFI_PASSWORD>` | Red del laboratorio (p. ej. `Lab_Computech_5G`); la contraseña la da el docente |
+| `<WIFI_SSID>` | Red del laboratorio: `Lab_Computech_<X>_5G`, donde `<X>` es el número del laboratorio (p. ej. `Lab_Computech_3_5G`) |
+| `<WIFI_PASSWORD>` | Contraseña del router del laboratorio (dada por el docente) |
+
+---
 
 ## Índice
 
@@ -249,7 +252,7 @@ sudo apt install -y \
 ```
 
 Apaga y vuelve a encender el robot. Al reconectarte, verifica con
-[README § 10](README.md#10-bringup-y-sensores).
+[README § 6](README.md#6-bringup-y-verificación-de-tópicos).
 
 ---
 
@@ -358,7 +361,7 @@ source tb4_connect.sh <IP_ROBOT> <DOMAIN_ID>
 
 O a mano:
 1. `ping <IP_ROBOT>` y `ssh ubuntu@<IP_ROBOT>`.
-2. Talker en la PC y listener en el robot ([README § 9](README.md#9-verificación-de-comunicación-talkerlistener)).
+2. Talker en la PC y listener en el robot ([README § 6.1](README.md#61-checklist-rápido-de-comunicación)).
 3. `ros2 topic list`: deben aparecer `/scan`, `/odom`, `/cmd_vel`, `/oakd/rgb/preview/image_raw`.
 4. `ros2 topic info /cmd_vel` debe indicar `TwistStamped`.
 

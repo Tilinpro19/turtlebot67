@@ -1,20 +1,45 @@
-# Guía de conexión — TurtleBot 4 (`turtlebot4`)
+# Guía de conexión WSL 2 · TurtleBot 4 (ROS 2 Jazzy)
 
-Datos verificados el 2026-09-30:
-- Ubuntu 24.04 + ROS 2 **Jazzy**, `RMW_IMPLEMENTATION=rmw_fastrtps_cpp`, **`ROS_DOMAIN_ID=67`**
-- Wi-Fi guardado en el robot: solo `Lab_Computech_3_5G` (robot: `192.168.0.104`, DHCP)
-- Ethernet `eth0`: `192.168.185.3/24` · Create3 (por `usb0`): `192.168.186.2`
-- Tu PC estaba en otra red (`L67`, `10.247.190.242`) y **sin ninguna distro WSL instalada**
-- Servicio `turtlebot4.service` arranca el bringup solo
+← [Volver al README (trabajo diario)](../README.md) · [Tarjeta offline](tarjeta_offline_lab.md) · [TROUBLESHOOTING](../TROUBLESHOOTING.md)
 
-> Regla de oro: **nunca borres `Lab_Computech_3_5G`** del robot. Solo agrega redes nuevas.
+Caso documentado de un robot concreto (hostname `turtlebot4`, laboratorio 3): dejarlo accesible
+por varias vías y preparar una PC **Windows + WSL 2** para conectarse a él. Los valores (IP,
+`ROS_DOMAIN_ID=67`, red `Lab_Computech_3_5G`) son los de ese robot; en otro laboratorio la red
+sigue el patrón `Lab_Computech_<X>_5G`.
+
+**Usa esta guía si:** trabajas desde Windows con WSL 2, o quieres dejar un robot con red de
+respaldo y acceso por cable antes de sacarlo del laboratorio.
+
+Convenciones: **[PC]** = tu PC de desarrollo (Windows + WSL 2) · **[ROBOT]** = terminal SSH en la Raspberry Pi.
+
+| Dato (verificado el 2026-09-30) | Valor |
+|---|---|
+| Sistema y ROS | Ubuntu 24.04 + ROS 2 **Jazzy**, `RMW_IMPLEMENTATION=rmw_fastrtps_cpp`, **`ROS_DOMAIN_ID=67`** |
+| Wi-Fi guardado en el robot | Solo `Lab_Computech_3_5G` (robot: `192.168.0.104`, DHCP) |
+| Contraseña del router | `<WIFI_PASSWORD>` (dada por el docente) |
+| Ethernet / Create 3 | `eth0`: `192.168.185.3/24` · Create 3 (por `usb0`): `192.168.186.2` |
+| PC de partida | Otra red (`L67`, `10.247.190.242`) y **sin ninguna distro WSL instalada** |
+| Bringup | `turtlebot4.service` lo arranca solo |
+
+> Regla de oro: **nunca borres `Lab_Computech_<X>_5G`** del robot (aquí `Lab_Computech_3_5G`). Solo agrega redes nuevas.
 
 ---
 
-## Parte 1 — Antes de dejar el laboratorio (con el SSH que ya tienes)
+## Índice
+
+1. [Antes de dejar el laboratorio](#1-antes-de-dejar-el-laboratorio-con-el-ssh-que-ya-tienes)
+2. [Preparar tu PC (Windows + WSL 2)](#2-preparar-tu-pc-windows--wsl-2)
+3. [Conectar (elige UNA vía)](#3-conectar-elige-una-vía)
+4. [Si algo sale mal](#4-si-algo-sale-mal)
+5. [Prueba final](#5-prueba-final)
+
+---
+
+## 1. Antes de dejar el laboratorio (con el SSH que ya tienes)
 
 ### 1.1 Aplicar el cambio de ahorro de energía (cortará el SSH unos segundos)
 ```bash
+# [ROBOT]
 sudo nmcli connection up netplan-wlan0-Lab_Computech_3_5G
 nmcli -f 802-11-wireless.powersave connection show netplan-wlan0-Lab_Computech_3_5G
 ```
@@ -37,7 +62,7 @@ nmcli connection show
 ```bash
 nmcli -f ipv4.method,ipv4.addresses connection show netplan-eth0
 ```
-Si muestra `manual` y `192.168.185.3/24`, puedes conectar PC ↔ robot con un cable Ethernet directo, sin router ni Wi-Fi (ver Parte 3).
+Si muestra `manual` y `192.168.185.3/24`, puedes conectar PC ↔ robot con un cable Ethernet directo, sin router ni Wi-Fi (ver §3).
 
 ### 1.4 Anotar el nombre del robot
 ```bash
@@ -46,7 +71,7 @@ hostname; hostname -I
 
 ---
 
-## Parte 2 — Preparar tu PC (Windows + WSL2)
+## 2. Preparar tu PC (Windows + WSL 2)
 
 ### 2.1 Instalar Ubuntu 24.04 en WSL (PowerShell normal; puede pedir reinicio)
 ```powershell
@@ -82,7 +107,7 @@ source ~/.bashrc
 
 ---
 
-## Parte 3 — Conectar (elige UNA vía)
+## 3. Conectar (elige UNA vía)
 
 | Vía | Cuándo | Cómo |
 |---|---|---|
@@ -90,7 +115,7 @@ source ~/.bashrc
 | **B. Cable directo** | No hay Wi-Fi común | Cable Ethernet PC ↔ robot. En Windows pon a tu adaptador Ethernet IP fija `192.168.185.10`, máscara `255.255.255.0`, sin puerta de enlace. `ssh ubuntu@192.168.185.3` |
 | **C. Hotspot del celular** | Sin router | Conecta PC y robot (`respaldo`) al hotspot. Busca la IP del robot en la lista de dispositivos del celular |
 
-Verificación (en este orden):
+### 3.1 Verificación (en este orden)
 ```bash
 ping <IP del robot>
 ssh ubuntu@<IP del robot>
@@ -98,7 +123,7 @@ ros2 node list          # desde WSL: debe listar /oakd, /turtlebot4_node, etc.
 ros2 topic echo /odom --once
 ```
 
-### Conexión SSH cómoda (opcional) — `C:\Users\mando\.ssh\config`
+### 3.2 Conexión SSH cómoda (opcional): `C:\Users\mando\.ssh\config`
 ```
 Host tb4
   HostName 192.168.0.104
@@ -109,7 +134,7 @@ Host tb4
 
 ---
 
-## Parte 4 — Si algo sale mal
+## 4. Si algo sale mal
 
 | Síntoma | Causa probable | Qué hacer |
 |---|---|---|
@@ -124,7 +149,7 @@ Host tb4
 | El robot se mueve solo o ignora tu script | Teleop por defecto en el robot (`teleop_twist_joy_node`, `joy_linux_node`) | Si usas el mando en la PC, no dejes otro mando conectado a la Pi; coordina quién publica en `/cmd_vel` |
 | Nada de lo anterior | — | Reinicia el robot: `sudo reboot`, espera ~1 min y repite la verificación |
 
-### Comandos de diagnóstico útiles (solo lectura)
+### 4.1 Comandos de diagnóstico útiles (solo lectura)
 ```bash
 nmcli dev status; nmcli connection show
 cat /proc/net/wireless
@@ -135,7 +160,8 @@ ros2 node list; ros2 topic list
 
 ---
 
-## Parte 5 — Prueba final de "sin problemas"
+## 5. Prueba final
+
 1. Reinicia el robot (`sudo reboot`).
 2. Sin tocar nada, espera ~1 min.
 3. Desde la PC: `ping` → `ssh` → `ros2 node list` → `ros2 topic echo /odom --once`.
@@ -144,3 +170,7 @@ Si las 3 vías funcionan, el robot queda "pulido" en conectividad.
 
 Después de esto se retoma el plan de evasión de obstáculos
 (`_legacy/superpowers/plans/2026-07-09-turtlebot4-obstacle-avoidance.md`).
+
+---
+
+← [Volver al README](../README.md)

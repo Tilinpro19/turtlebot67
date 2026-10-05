@@ -1,8 +1,11 @@
-# TurtleBot 4 · ROS 2 Jazzy · Guía de trabajo diario
+# Guía de trabajo diario · TurtleBot 4 (ROS 2 Jazzy)
 
 Guía práctica para trabajar con **cualquier TurtleBot 4** (Lite o Standard) en el laboratorio de
 Computer Vision, con **ROS 2 Jazzy sobre Ubuntu 24.04 Noble**. Supone el escenario normal: el robot
-**ya está configurado y conectado a la red del laboratorio**.
+**ya está configurado y conectado a la red del laboratorio** (`Lab_Computech_<X>_5G`).
+
+**Usa esta guía si:** vas a preparar tu PC por primera vez o a trabajar con un robot que ya
+funciona en el laboratorio.
 
 <table>
 <tr>
@@ -17,10 +20,13 @@ Ficha de referencia rápida y checklist para trabajar en la red sin internet.</t
 
 > **Base:** Adaptado sobre la guía de Luis Cortijo ([requeerimientos_turtlebot4](https://github.com/LuisEnriqueCortijoGonzales/requeerimientos_turtlebot4)) con optimizaciones probadas en el laboratorio (WSL 2, FastDDS Unicast, sincronización horaria sin internet y scripts propios). Manual oficial: [TurtleBot 4 User Manual](https://turtlebot.github.io/turtlebot4-user-manual/).
 
+Convenciones: **[PC]** = tu PC de desarrollo (Ubuntu nativo, WSL o VM) · **[ROBOT]** = terminal SSH en la Raspberry Pi.
+
 | Marcador | Significado |
 |---|---|
 | `<IP_ROBOT>` | IP del robot en la red del laboratorio |
 | `<DOMAIN_ID>` | `ROS_DOMAIN_ID` de **tu** robot (uno distinto por equipo, entre 0 y 101) |
+| `<WIFI_SSID>` | Red del laboratorio: `Lab_Computech_<X>_5G`, donde `<X>` es el número del laboratorio (p. ej. `Lab_Computech_3_5G`) |
 | `<WIFI_PASSWORD>` | Contraseña del router del laboratorio (dada por el docente) |
 
 ---
@@ -44,7 +50,7 @@ Ficha de referencia rápida y checklist para trabajar en la red sin internet.</t
 
 ---
 
-# Parte I: Preparar tu entorno (una sola vez, con internet)
+## Parte I: Preparar tu entorno (una sola vez, con internet)
 
 > ⚠️ **Importante:** La red Wi-Fi del laboratorio **no tiene salida a internet**. Realiza toda la instalación de paquetes (`apt install`) antes de ir al laboratorio.
 
@@ -133,11 +139,11 @@ export ROS_DOMAIN_ID=<DOMAIN_ID>          # Cambia por el ID asignado a tu robot
 
 ---
 
-# Parte II: Flujo en el laboratorio (cada sesión)
+## Parte II: Flujo en el laboratorio (cada sesión)
 
 ## 5. Conectar con el robot
 
-1. Conecta tu laptop a la red **Wi-Fi del laboratorio**.
+1. Conecta tu laptop a la red **Wi-Fi del laboratorio**, `Lab_Computech_<X>_5G` (o la de 2.4 GHz del mismo router) con la contraseña del router `<WIFI_PASSWORD>`. Windows dirá "sin internet": es normal.
 2. **Obtener la `<IP_ROBOT>`:**
    - **Forma principal:** Mirar la pantalla OLED del TurtleBot (si es Standard) o consultar la tabla de clientes en el panel del router.
    - **Alternativa:** `arp -a` buscando la MAC de Raspberry Pi (prefijo `d8:3a:dd`, `dc:a6:32` o `e4:5f:01`).
@@ -177,7 +183,7 @@ systemctl is-active turtlebot4.service    # Debe responder "active"
 ```
 *(Si no estuviera activo: `ros2 launch turtlebot4_bringup lite.launch.py` o `standard.launch.py`).*
 
-### Checklist rápido de comunicación
+### 6.1 Checklist rápido de comunicación
 En tu PC ejecuta:
 ```bash
 ros2 topic list
@@ -185,7 +191,13 @@ ros2 topic list
 
 Debes ver los tópicos base: `/scan`, `/odom`, `/cmd_vel` y `/tf` *(la cámara `/oakd/...` aparecerá si el nodo de visión correspondiente está activo)*.
 
-#### Diagnóstico automático con `tb4_check.sh`:
+Prueba de humo en ambos sentidos (`talker` en la PC, `listener` en el robot):
+```bash
+ros2 run demo_nodes_cpp talker        # [PC]
+ros2 run demo_nodes_py listener       # [ROBOT] debe imprimir "I heard: ..."
+```
+
+### 6.2 Diagnóstico automático con `tb4_check.sh`
 Valida frecuencias de sensores, Create 3 y desfase de reloj con un solo comando:
 ```bash
 ./tb4_check.sh <IP_ROBOT>            # Diagnóstico desde la PC
@@ -200,12 +212,12 @@ Si algún componente falla, consulta [TROUBLESHOOTING.md](TROUBLESHOOTING.md), y
 
 En ROS 2 Jazzy, el TurtleBot 4 requiere **`geometry_msgs/msg/TwistStamped`** en `/cmd_vel` (incluye marca de tiempo). Un mensaje `Twist` tradicional no moverá el robot.
 
-### Control por teclado estándar:
+### 7.1 Control por teclado estándar
 ```bash
 ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -p stamped:=true
 ```
 
-### O con el script WASD incluido en el repositorio:
+### 7.2 Script WASD del repositorio
 ```bash
 python3 teleop_wasd.py
 ```
@@ -274,7 +286,6 @@ En la Wi-Fi compartida del laboratorio, **utiliza siempre el tópico comprimido*
 ```text
 turtleclaude4/
 ├── README.md                  ← Guía principal de trabajo diario
-├── README.original.md         ← Copia de respaldo de la versión extensa anterior
 ├── CONFIGURACION_INICIAL.md   ← Setup inicial del robot desde cero
 ├── TROUBLESHOOTING.md         ← Diagnóstico y solución de problemas
 ├── tb4_connect.sh             ← Configuración de conexión y DDS (soporta --off)
@@ -283,7 +294,7 @@ turtleclaude4/
 ├── ver_lidar_tb4.py           ← Visor cenital de LiDAR
 ├── teleop_wasd.py             ← Teleoperación por teclado
 ├── docs/                      ← Documentación auxiliar y guías de campo
-│   ├── guia_conexion_turtlebot4.md
+│   ├── guia_conexion_turtlebot4.md ← Puesta a punto Windows + WSL 2 y vías de conexión
 │   └── tarjeta_offline_lab.md ← Checklist de bolsillo para el laboratorio sin internet
 └── _legacy/                   ← Scripts antiguos y referencias previas
 ```

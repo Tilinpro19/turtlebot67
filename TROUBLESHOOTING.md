@@ -2,13 +2,33 @@
 
 ← [Volver al README (trabajo diario)](README.md) · [CONFIGURACION_INICIAL](CONFIGURACION_INICIAL.md)
 
-Guía de fallos frecuentes en el laboratorio, válida para TurtleBot 4 Lite y Standard.
-El primer recurso es siempre el flujo del [README](README.md) (basado en la guía de Cortijo);
-lo de aquí recoge lo aprendido cuando ese flujo no bastó. Si el robot está desconfigurado
-o viene de fábrica, ve directamente a [CONFIGURACION_INICIAL.md](CONFIGURACION_INICIAL.md). Ejecuta primero el
-[checklist rápido](#3-checklist-rápido-de-diagnóstico) y luego ve a la sección del síntoma.
+Guía de fallos frecuentes en el laboratorio, válida para TurtleBot 4 Lite y Standard con
+**ROS 2 Jazzy / Ubuntu 24.04**. El primer recurso es siempre el flujo del [README](README.md)
+(basado en la guía de Cortijo); lo de aquí recoge lo aprendido cuando ese flujo no bastó.
 
-Convenciones: **[PC]** = PC/VM de desarrollo · **[ROBOT]** = SSH a la Raspberry Pi.
+**Usa esta guía si:** el robot está configurado pero algo falla (no ves tópicos, un sensor no
+publica, el robot no se mueve, `apt` da errores). Si el robot está desconfigurado o viene de
+fábrica, ve directamente a [CONFIGURACION_INICIAL.md](CONFIGURACION_INICIAL.md). Ejecuta primero
+el [checklist rápido](#3-checklist-rápido-de-diagnóstico) y luego ve a la sección del síntoma.
+
+Convenciones: **[PC]** = tu PC de desarrollo (Ubuntu nativo, WSL o VM) · **[ROBOT]** = terminal SSH en la Raspberry Pi.
+
+| Marcador | Significado |
+|---|---|
+| `<IP_ROBOT>` | IP del robot en la red del laboratorio |
+| `<DOMAIN_ID>` | `ROS_DOMAIN_ID` de **tu** robot (0–101, único en el laboratorio) |
+| `<WIFI_SSID>` | Red del laboratorio: `Lab_Computech_<X>_5G`, donde `<X>` es el número del laboratorio (p. ej. `Lab_Computech_3_5G`) |
+| `<WIFI_PASSWORD>` | Contraseña del router del laboratorio (dada por el docente) |
+
+---
+
+## Índice
+
+1. [Red y DDS](#1-red-y-dds)
+2. [Cámara y sensores](#2-cámara-y-sensores)
+3. [Checklist rápido de diagnóstico](#3-checklist-rápido-de-diagnóstico)
+4. [Instalación](#4-instalación)
+5. [Escalar](#5-escalar)
 
 ---
 
@@ -175,7 +195,7 @@ Ejecútalo completo **antes de escalar un incidente** y adjunta la salida.
 
 **Versión automática:** `./tb4_check.sh <IP_ROBOT> --robot` ejecuta estos mismos pasos,
 marca cada uno como `[ok]` / `[FALLA]` e indica la sección de esta guía a consultar
-([README § 11](README.md#11--validar-tópicos-de-cámara-oak-d-y-lidar)). A continuación, la versión manual.
+([README § 6.2](README.md#62-diagnóstico-automático-con-tb4_checksh)). A continuación, la versión manual.
 
 ```bash
 # ---------- [PC] ----------
@@ -205,7 +225,7 @@ journalctl -u turtlebot4.service -n 40 --no-pager   # 14. Errores del bringup
 | 7, 11 | §1.2 / §1.3 |
 | 8 o el robot no se mueve | §2.3 |
 
-Prueba de humo final: `talker` en la PC y `listener` en el robot ([README § 9](README.md#9-verificación-de-comunicación-talkerlistener)).
+Prueba de humo final: `talker` en la PC y `listener` en el robot ([README § 6.1](README.md#61-checklist-rápido-de-comunicación)).
 
 ---
 
