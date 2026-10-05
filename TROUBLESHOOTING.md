@@ -1,8 +1,11 @@
 # Troubleshooting · TurtleBot 4 (ROS 2 Jazzy)
 
+← [Volver al README (trabajo diario)](README.md) · [CONFIGURACION_INICIAL](CONFIGURACION_INICIAL.md)
+
 Guía de fallos frecuentes en el laboratorio, válida para TurtleBot 4 Lite y Standard.
-El primer recurso es siempre el flujo base del [README](README.md) (guía de Cortijo);
-lo de aquí recoge lo aprendido cuando ese flujo no bastó. Ejecuta primero el
+El primer recurso es siempre el flujo del [README](README.md) (basado en la guía de Cortijo);
+lo de aquí recoge lo aprendido cuando ese flujo no bastó. Si el robot está desconfigurado
+o viene de fábrica, ve directamente a [CONFIGURACION_INICIAL.md](CONFIGURACION_INICIAL.md). Ejecuta primero el
 [checklist rápido](#3-checklist-rápido-de-diagnóstico) y luego ve a la sección del síntoma.
 
 Convenciones: **[PC]** = PC/VM de desarrollo · **[ROBOT]** = SSH a la Raspberry Pi.
@@ -55,6 +58,9 @@ Hay **tres** lugares que deben coincidir:
 2. **Raspberry Pi**: `turtlebot4-setup` → *ROS Setup* → *Bash Setup*. Un `export` en tu sesión
    SSH **no** cambia el servicio `turtlebot4.service`.
 3. **Create 3**: portal `http://<IP_ROBOT>:8080` → *Application → Configuration*.
+
+Para corregir (2) y (3): [CONFIGURACION_INICIAL § 3](CONFIGURACION_INICIAL.md#3-ros_domain_id-del-robot)
+y [§ 2.1](CONFIGURACION_INICIAL.md#21-parámetros-de-red-y-ros).
 
 Síntoma típico de (3) desalineado: aparecen `/scan` y `/oakd/...` (que publica la Pi),
 pero **faltan** `/odom`, `/battery_state`, `/imu`, `/hazard_detection` y `/cmd_vel` no mueve
@@ -117,6 +123,7 @@ detén uno de los dos (`sudo systemctl restart turtlebot4.service` y no relances
 
 Arreglos:
 - `X_LINK_ERROR` / `Device not found`: desconecta y reconecta la OAK-D, o reinicia el servicio. Con batería baja, la cámara se reinicia sola: carga el robot.
+- Aparece en `lsusb` pero el driver no la abre (`insufficient permissions`): falta la regla udev → [CONFIGURACION_INICIAL § 5.1](CONFIGURACION_INICIAL.md#51-oak-d-no-detectada).
 - Relanzar la cámara aislada (con el bringup detenido): `ros2 launch turtlebot4_bringup oakd.launch.py`.
 - **Paso 4 OK, paso 5 falla**: es ancho de banda de Wi-Fi, no la cámara. Usa `/compressed` en `rqt_image_view`, acércate al router o usa cable.
 
@@ -131,7 +138,7 @@ Arreglos:
 | 5 | Datos válidos | `ros2 topic echo /scan --once \| head -30` | `ranges` con valores finitos |
 
 Arreglos:
-- Sin `/dev/RPLIDAR`: falta la regla udev → `sudo apt install --reinstall ros-jazzy-turtlebot4-bringup`, reconecta el USB y reinicia.
+- Sin `/dev/RPLIDAR`: falta la regla udev → [CONFIGURACION_INICIAL § 5.2](CONFIGURACION_INICIAL.md#52-rplidar-sin-devrplidar).
 - `Permission denied` en `/dev/ttyUSB0`: `sudo usermod -aG dialout ubuntu`, cierra la sesión y vuelve a entrar.
 - Relanzar aislado: `ros2 launch turtlebot4_bringup rplidar.launch.py`.
 
@@ -164,7 +171,7 @@ Ejecútalo completo **antes de escalar un incidente** y adjunta la salida.
 
 **Versión automática:** `./tb4_check.sh <IP_ROBOT> --robot` ejecuta estos mismos pasos,
 marca cada uno como `[ok]` / `[FALLA]` e indica la sección de esta guía a consultar
-(README §4.5). A continuación, la versión manual.
+([README § 11](README.md#11--validar-tópicos-de-cámara-oak-d-y-lidar)). A continuación, la versión manual.
 
 ```bash
 # ---------- [PC] ----------
@@ -194,7 +201,7 @@ journalctl -u turtlebot4.service -n 40 --no-pager   # 14. Errores del bringup
 | 7, 11 | §1.2 / §1.3 |
 | 8 o el robot no se mueve | §2.3 |
 
-Prueba de humo final: `talker` en la PC y `listener` en el robot (README §3.5).
+Prueba de humo final: `talker` en la PC y `listener` en el robot ([README § 9](README.md#9-verificación-de-comunicación-talkerlistener)).
 
 ---
 
@@ -226,3 +233,7 @@ sudo apt update
 Si el checklist completo no resuelve el problema, contacta al responsable del
 laboratorio (Cortijo) con: salida del §3, `ROS_DOMAIN_ID` usado, red (SSID) y tipo de
 máquina (VirtualBox / WSL / nativo).
+
+---
+
+← [Volver al README](README.md)

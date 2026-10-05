@@ -30,7 +30,7 @@ port_open() { timeout 3 bash -c ">/dev/tcp/$1/$2" 2>/dev/null; }
 
 echo "== 1. Entorno de esta PC"
 [ "$ROS_DISTRO" = "jazzy" ] || source /opt/ros/jazzy/setup.bash 2>/dev/null
-if [ "$ROS_DISTRO" = "jazzy" ]; then ok "ROS_DISTRO=jazzy"; else fail "ROS 2 Jazzy no encontrado" "README seccion 2"; fi
+if [ "$ROS_DISTRO" = "jazzy" ]; then ok "ROS_DISTRO=jazzy"; else fail "ROS 2 Jazzy no encontrado" "README secciones 2-3"; fi
 if [ -n "$ROS_DOMAIN_ID" ]; then ok "ROS_DOMAIN_ID=$ROS_DOMAIN_ID"; else warn "ROS_DOMAIN_ID sin definir (vale 0). Debe ser el del robot"; fi
 ok "RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-<por defecto: rmw_fastrtps_cpp>}"
 [ -n "$ROS_STATIC_PEERS" ] && ok "ROS_STATIC_PEERS=$ROS_STATIC_PEERS"
@@ -58,7 +58,7 @@ for t in /scan /odom /cmd_vel /oakd/rgb/preview/image_raw /battery_state /tf; do
       /odom|/battery_state|/cmd_vel) fail "falta $t (lo publica/escucha el Create 3)" "TROUBLESHOOTING 1.2 y 1.3" ;;
       /scan) fail "falta /scan" "TROUBLESHOOTING 2.2" ;;
       /oakd/*) fail "falta $t" "TROUBLESHOOTING 2.1" ;;
-      *) fail "falta $t" "bringup activo? (README seccion 6)" ;;
+      *) fail "falta $t" "bringup activo? (README seccion 10)" ;;
     esac
   fi
 done
