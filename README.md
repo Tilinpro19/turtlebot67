@@ -1,647 +1,308 @@
 # TurtleBot 4 · ROS 2 Jazzy · Guía de trabajo diario
 
-Guía para trabajar con **cualquier TurtleBot 4** (Lite o Standard) en el laboratorio de
-Computer Vision, con **ROS 2 Jazzy sobre Ubuntu 24.04 Noble**. Supone el escenario
-normal: el robot **ya está configurado y conectado a la red del laboratorio**.
+Guía práctica para trabajar con **cualquier TurtleBot 4** (Lite o Standard) en el laboratorio de
+Computer Vision, con **ROS 2 Jazzy sobre Ubuntu 24.04 Noble**. Supone el escenario normal: el robot
+**ya está configurado y conectado a la red del laboratorio**.
 
 <table>
 <tr>
 <td>🛠️ <b><a href="CONFIGURACION_INICIAL.md">CONFIGURACION_INICIAL.md</a></b><br>
-El robot viene de fábrica, se reseteó o está desconfigurado (red, Create 3,
-paquetes, udev, servicio).</td>
+Robot de fábrica, reseteado o desconfigurado (red, Create 3, paquetes, udev, servicio).</td>
 <td>🩺 <b><a href="TROUBLESHOOTING.md">TROUBLESHOOTING.md</a></b><br>
-Algo no funciona: diagnóstico por síntomas y checklist rápido.</td>
+Diagnóstico por síntomas, errores frecuentes y checklist paso a paso.</td>
+<td>📶 <b><a href="docs/tarjeta_offline_lab.md">tarjeta_offline_lab.md</a></b><br>
+Ficha de referencia rápida y checklist para trabajar en la red sin internet.</td>
 </tr>
 </table>
 
-**Base:** guía del curso de Luis Cortijo,
-[requeerimientos_turtlebot4](https://github.com/LuisEnriqueCortijoGonzales/requeerimientos_turtlebot4),
-integrada en el mismo orden. Los bloques **➕ Extra** son adaptaciones probadas en el
-laboratorio (WSL 2, detalles de Jazzy, scripts de este repositorio).
-Manual oficial: [TurtleBot 4 User Manual](https://turtlebot.github.io/turtlebot4-user-manual/).
+> **Base:** Adaptado sobre la guía de Luis Cortijo ([requeerimientos_turtlebot4](https://github.com/LuisEnriqueCortijoGonzales/requeerimientos_turtlebot4)) con optimizaciones probadas en el laboratorio (WSL 2, FastDDS Unicast, sincronización horaria sin internet y scripts propios). Manual oficial: [TurtleBot 4 User Manual](https://turtlebot.github.io/turtlebot4-user-manual/).
 
 | Marcador | Significado |
 |---|---|
 | `<IP_ROBOT>` | IP del robot en la red del laboratorio |
-| `<DOMAIN_ID>` | `ROS_DOMAIN_ID` de **tu** robot (uno distinto por robot) |
-| `<WIFI_PASSWORD>` | Contraseña de la Wi-Fi del laboratorio (la da el docente; no se versiona) |
+| `<DOMAIN_ID>` | `ROS_DOMAIN_ID` de **tu** robot (uno distinto por equipo, entre 0 y 101) |
+| `<WIFI_PASSWORD>` | Contraseña del router del laboratorio (dada por el docente) |
 
 ---
 
 ## Índice
 
-**Parte I: preparar la PC (una sola vez)**
-1. [Máquina virtual con Ubuntu 24.04](#1-máquina-virtual-con-ubuntu-2404)
-2. [Preparar Ubuntu para ROS 2 Jazzy](#2-preparar-ubuntu-para-ros-2-jazzy)
-3. [Instalar ROS 2 Jazzy](#3-instalar-ros-2-jazzy)
-4. [Instalar paquetes del TurtleBot 4](#4-instalar-paquetes-del-turtlebot-4)
-5. [➕ Entorno WSL 2](#5--entorno-wsl-2)
-6. [➕ Variables de entorno en ROS 2 Jazzy](#6--variables-de-entorno-en-ros-2-jazzy)
+**Parte I: Preparar tu entorno (una sola vez, con internet)**
+- [¿Qué entorno usas?](#parte-i-preparar-tu-entorno-una-sola-vez-con-internet) (Ubuntu nativo como estándar; WSL 2, VM o Mac)
+- [1. Instalar ROS 2 Jazzy](#1-instalar-ros-2-jazzy)
+- [2. Instalar paquetes del TurtleBot 4 y visión](#2-instalar-paquetes-del-turtlebot-4-y-visión)
+- [3. Configuración para entornos virtuales o Windows](#3-configuración-para-entornos-virtuales-o-windows) (WSL 2 / VirtualBox)
+- [4. Variables de entorno](#4-variables-de-entorno)
 
-**Parte II: flujo de laboratorio (cada sesión)**
+**Parte II: Flujo en el laboratorio (cada sesión)**
+- [5. Conectar con el robot (Wi-Fi, reloj y terminal)](#5-conectar-con-el-robot)
+- [6. Bringup y verificación de tópicos](#6-bringup-y-verificación-de-tópicos)
+- [7. Pruebas de movimiento (TwistStamped)](#7-pruebas-de-movimiento-twiststamped)
+- [8. Visión, cámara y scripts del repositorio](#8-visión-cámara-y-scripts-del-repositorio)
 
-7. [Conectar con el robot](#7-conectar-con-el-robot)
-8. [Verificar `ROS_DOMAIN_ID`](#8-verificar-ros_domain_id)
-9. [Verificación de comunicación (talker/listener)](#9-verificación-de-comunicación-talkerlistener)
-10. [Bringup y sensores](#10-bringup-y-sensores)
-11. [➕ Validar tópicos de cámara OAK-D y LiDAR](#11--validar-tópicos-de-cámara-oak-d-y-lidar)
-12. [Pruebas de movimiento (`TwistStamped`)](#12-pruebas-de-movimiento-twiststamped)
-13. [Cámara, visión y scripts del repositorio](#13-cámara-visión-y-scripts-del-repositorio)
-14. [Notas y solución de errores](#14-notas-y-solución-de-errores)
-
-**Anexos**
-[A. Comparativa de entornos](#anexo-a-comparativa-de-entornos) ·
-[B. Descubrimiento DDS y varios robots](#anexo-b-descubrimiento-dds-y-varios-robots) ·
-[C. Estructura del repositorio](#anexo-c-estructura-del-repositorio) ·
-[D. Trabajar desde Mac](#anexo-d-trabajar-desde-mac)
+**Anexos:** [A. Entornos soportados](#anexo-a-entornos-soportados) · [B. DDS y multi-robot](#anexo-b-descubrimiento-dds-y-varios-robots) · [C. Estructura del repositorio](#anexo-c-estructura-del-repositorio) · [D. Guía Mac detallada](#anexo-d-trabajar-desde-mac)
 
 ---
 
-# Parte I: preparar la PC (una sola vez)
+# Parte I: Preparar tu entorno (una sola vez, con internet)
 
-## 1. Máquina virtual con Ubuntu 24.04
+> ⚠️ **Importante:** La red Wi-Fi del laboratorio **no tiene salida a internet**. Realiza toda la instalación de paquetes (`apt install`) antes de ir al laboratorio.
 
-1. Instala **[VirtualBox](https://www.virtualbox.org)**.
-2. Crea una nueva VM:
-   - **Tipo:** Linux → Ubuntu (64-bit)
-   - **RAM:** mínimo 4 GB (recomendado 8 GB)
-   - **Disco:** 20 GB o más
-   - **ISO:** [Ubuntu 24.04](https://releases.ubuntu.com/24.04)
-3. Instala Ubuntu normalmente.
-4. Instala las **Guest Additions** (mejor resolución y portapapeles).
-5. Actualiza el sistema:
-   ```bash
-   sudo apt update
-   sudo apt upgrade -y
-   sudo reboot
-   ```
-
-> ➕ **Extra: red en modo puente.** En VirtualBox → Configuración → Red, usa
-> **Adaptador puente** sobre la interfaz Wi-Fi real. Con NAT (el valor por defecto) el
-> ping al robot puede funcionar, pero ROS 2 no descubre los tópicos.
-
-> ➕ **Extra: otros entornos.** Funciona igual con **Ubuntu 24.04 nativo**, o con
-> **WSL 2** en Windows 11 (configúralo según la [sección 5](#5--entorno-wsl-2)). Desde
-> **Mac**, ver el [Anexo D](#anexo-d-trabajar-desde-mac). En el resto
-> de la guía, "VM" significa tu entorno, sea cual sea.
+El entorno de referencia y más directo es **Ubuntu 24.04 nativo**. Si trabajas desde otro sistema:
+- **Ubuntu 24.04 nativo:** Pasa directamente al [Paso 1](#1-instalar-ros-2-jazzy).
+- **Windows 11 (WSL 2):** Sigue los pasos de instalación en Ubuntu y revisa los ajustes de red en el [Paso 3.1](#31-wsl-2-en-windows-11).
+- **Windows 10 / VirtualBox:** Configura la VM con **Adaptador puente** ([Paso 3.2](#32-virtualbox-windows-10-o-alternativa)).
+- **macOS:** Instala Ubuntu 24.04 ARM64/Intel en VM (UTM o Parallels) ([Anexo D](#anexo-d-trabajar-desde-mac)).
 
 ---
 
-## 2. Preparar Ubuntu para ROS 2 Jazzy
+## 1. Instalar ROS 2 Jazzy
+
+Dentro de tu Ubuntu 24.04:
 
 ```bash
-# Asegurar entorno UTF-8
-sudo apt install locales -y
-sudo locale-gen en_US en_US.UTF-8
+# 1. Asegurar locales UTF-8
+sudo apt install locales -y && sudo locale-gen en_US en_US.UTF-8
 sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
 export LANG=en_US.UTF-8
 
-# Habilitar repositorios
-sudo apt install software-properties-common -y
-sudo add-apt-repository universe
-
-# Añadir repositorio de ROS
-sudo apt install curl gnupg2 lsb-release -y
+# 2. Añadir repositorio de ROS 2
+sudo apt install software-properties-common curl gnupg2 lsb-release -y
+sudo add-apt-repository universe -y
 sudo mkdir -p /usr/share/keyrings
 curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | sudo gpg --dearmor -o /usr/share/keyrings/ros-archive-keyring.gpg
-
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
 
-sudo apt update
+# 3. Instalar ROS 2 Desktop
+sudo apt update && sudo apt install ros-jazzy-desktop -y
 ```
 
-> ➕ Si `apt update` falla con `EXPKEYSIG` o `NO_PUBKEY`:
-> [TROUBLESHOOTING § 4.1](TROUBLESHOOTING.md#41-error-de-firma-gpg-en-apt-update).
+> 💡 Si `apt update` falla con `EXPKEYSIG` o `NO_PUBKEY`: consulta [TROUBLESHOOTING § 4.1](TROUBLESHOOTING.md#41-error-de-firma-gpg-en-apt-update).
 
 ---
 
-## 3. Instalar ROS 2 Jazzy
+## 2. Instalar paquetes del TurtleBot 4 y visión
 
 ```bash
-sudo apt install ros-jazzy-desktop -y
-echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc
-source ~/.bashrc
-```
-
-Verifica que ROS 2 funciona:
-
-```bash
-ros2 run demo_nodes_cpp talker
+sudo apt update && sudo apt install -y \
+  ros-jazzy-turtlebot4-desktop \
+  ros-jazzy-teleop-twist-keyboard \
+  ros-jazzy-rqt-image-view \
+  ros-jazzy-image-transport-plugins \
+  ros-jazzy-cv-bridge \
+  python3-opencv python3-numpy
 ```
 
 ---
 
-## 4. Instalar paquetes del TurtleBot 4
+## 3. Configuración para entornos virtuales o Windows
 
-```bash
-sudo apt update
-sudo apt install ros-jazzy-turtlebot4-desktop -y
-```
+### 3.1 WSL 2 en Windows 11
+Para que ROS 2 en WSL 2 descubra al robot a través de la red de Windows:
 
-Verifica que está instalado:
-
-```bash
-ros2 pkg list | grep turtlebot4
-```
-
-> ➕ **Extra: herramientas para teleop y visión.**
-> ```bash
-> sudo apt install -y ros-jazzy-teleop-twist-keyboard ros-jazzy-rqt-image-view \
->   ros-jazzy-image-transport-plugins ros-jazzy-cv-bridge python3-opencv python3-numpy
-> ```
-
----
-
-## 5. ➕ Entorno WSL 2
-
-Solo si trabajas desde **Windows 11 con WSL 2** en lugar de la VM. Sin estos pasos,
-ROS 2 no ve el robot.
-
-### 5.1 Instalación y red
-
-1. PowerShell **como administrador**:
-   ```powershell
-   wsl --install -d Ubuntu-24.04
-   ```
-2. **Red espejo.** WSL usa NAT por defecto, y por NAT no pasa el descubrimiento de ROS 2.
-   Crea `C:\Users\<usuario>\.wslconfig`:
+1. **Modo de red espejo (`mirrored`):**
+   Crea o edita en Windows el archivo `C:\Users\<tu-usuario>\.wslconfig`:
    ```ini
    [wsl2]
    networkingMode=mirrored
    ```
-   Aplícalo con `wsl --shutdown` y vuelve a abrir Ubuntu.
-3. **Firewall de Hyper-V.** Permite el tráfico entrante (PowerShell **administrador**):
+   Aplica los cambios en PowerShell con `wsl --shutdown` y reabre Ubuntu.
+2. **Permitir tráfico en Hyper-V (PowerShell como Administrador):**
    ```powershell
    Set-NetFirewallHyperVVMSetting -Name '{40E0AC32-46A5-438A-A0B2-2B479E8F2E90}' -DefaultInboundAction Allow
    ```
-4. **Perfil de red Privado.** En Windows: Configuración → Red → Wi-Fi → la red del
-   laboratorio → *Tipo de perfil de red*: **Privada**.
-5. Dentro de Ubuntu, sigue las secciones [2](#2-preparar-ubuntu-para-ros-2-jazzy) a
-   [4](#4-instalar-paquetes-del-turtlebot-4) igual que en la VM.
+3. **Perfil de red Privado en Windows:** Configuración → Red e Internet → Wi-Fi → red del lab → marcar como **Privada**.
+4. **Descubrimiento DDS:** Si el router o WSL tienen pérdidas con multicast, el script `tb4_connect.sh` conmuta de forma transparente a unicast (`ROS_STATIC_PEERS`).
 
-### 5.2 Multicast y `ROS_STATIC_PEERS` (FastDDS)
-
-Aun con `mirrored`, el **multicast** de descubrimiento es poco fiable en WSL. Resultado
-de las pruebas: sin peers, **0 tópicos en 30 s**; con peers, descubrimiento en **~1 s**.
-
-La solución en Jazzy es el descubrimiento **unicast** con `ROS_STATIC_PEERS`, que
-FastDDS (`rmw_fastrtps_cpp`, el RMW por defecto) soporta de forma nativa:
-
-```bash
-export ROS_STATIC_PEERS=<IP_ROBOT>    # una o varias IPs separadas por ';'
-ros2 daemon stop                      # el daemon guarda el descubrimiento anterior
-ros2 topic list
-```
-
-- Basta con configurarlo **en la PC**; el robot no necesita cambios.
-- Si cambia la IP del robot, actualiza la variable.
-- `source tb4_connect.sh` ([§7.2](#72--conexión-con-tb4_connectsh)) lo detecta y lo
-  aplica solo.
-
-### 5.3 Ventanas, GPU y archivos
-
-- **Ventanas gráficas:** WSLg (incluido en Windows 11) abre `rqt_image_view`, `rviz2` y
-  `cv2.imshow` sin configuración adicional.
-- **GPU NVIDIA:** instala solo el driver de **Windows**; dentro de WSL comprueba con
-  `nvidia-smi`. No instales drivers NVIDIA dentro de Ubuntu.
-- **Archivos del repositorio:** desde WSL están en `/mnt/c/Users/<usuario>/turtleclaude4`.
-  Los scripts usan finales de línea LF (lo fuerza `.gitattributes`).
+### 3.2 VirtualBox (Windows 10 o alternativa)
+- En Configuración de la VM → **Red**: Cambia NAT a **Adaptador puente (Bridged)** seleccionando la interfaz Wi-Fi real. Con NAT el robot no podrá ser descubierto por ROS 2.
 
 ---
 
-## 6. ➕ Variables de entorno en ROS 2 Jazzy
+## 4. Variables de entorno
 
-`source` carga ROS en la terminal; las variables definen con quién hablas. Añade al
-final de `~/.bashrc` en la VM/WSL:
+Agrega lo siguiente al final de tu `~/.bashrc`:
 
 ```bash
 source /opt/ros/jazzy/setup.bash
-export ROS_DOMAIN_ID=<DOMAIN_ID>          # el MISMO que tu robot
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
-# Solo WSL o redes sin multicast:
-# export ROS_STATIC_PEERS=<IP_ROBOT>
+export ROS_DOMAIN_ID=<DOMAIN_ID>          # Cambia por el ID asignado a tu robot (0-101)
 ```
 
-```bash
-source ~/.bashrc
-printenv | grep -E 'ROS_|RMW_'     # ROS_DISTRO=jazzy, ROS_DOMAIN_ID, RMW_IMPLEMENTATION
-```
-
-| Variable | Valor | Nota |
-|---|---|---|
-| `ROS_DISTRO` | `jazzy` | La define el `source`. Vacía significa ROS no cargado |
-| `ROS_DOMAIN_ID` | `<DOMAIN_ID>` | Usa **0–101** (los valores altos chocan con puertos de Linux). Distinto por robot |
-| `RMW_IMPLEMENTATION` | `rmw_fastrtps_cpp` | El mismo que el robot y el Create 3 |
-| `ROS_STATIC_PEERS` | `<IP_ROBOT>` | Solo si el multicast no funciona (§5.2) |
-
-> `export` en una terminal solo dura en esa terminal. Tras cambiar variables, ejecuta
-> `ros2 daemon stop` para que el daemon no use datos de descubrimiento viejos.
+> **Nota:** Al usar `source tb4_connect.sh`, las variables y el dominio se configuran dinámicamente según el robot conectado.
 
 ---
 
-# Parte II: flujo de laboratorio (cada sesión)
+# Parte II: Flujo en el laboratorio (cada sesión)
 
-## 7. Conectar con el robot
+## 5. Conectar con el robot
 
-El robot ya está en la red del laboratorio. Conecta tu PC a la **misma red Wi-Fi**.
+1. Conecta tu laptop a la red **Wi-Fi del laboratorio**.
+2. **Obtener la `<IP_ROBOT>`:**
+   - **Forma principal:** Mirar la pantalla OLED del TurtleBot (si es Standard) o consultar la tabla de clientes en el panel del router.
+   - **Alternativa:** `arp -a` buscando la MAC de Raspberry Pi (prefijo `d8:3a:dd`, `dc:a6:32` o `e4:5f:01`).
+   - *(Si tu red admite mDNS activo: `ssh ubuntu@turtlebot4.local`).*
 
-### 7.1 SSH directo
+### 5.1 Sincronización horaria (Red sin internet)
+Dado que el router del laboratorio **no tiene internet**, la Raspberry Pi no puede usar NTP y arranca con la hora desfasada en cada encendido. Esto corrompe los timestamps de `tf` y la odometría:
 
+Copia la hora de tu PC al robot por SSH al inicio de la sesión:
 ```bash
-ssh ubuntu@<IP_ROBOT>
+ssh -t ubuntu@<IP_ROBOT> "sudo date -u -s '$(date -u +%Y-%m-%dT%H:%M:%S)'"
 ```
+*(Más detalles y persistencia en [TROUBLESHOOTING § 2.4](TROUBLESHOOTING.md#24-reloj-desfasado-tf--fusión-de-sensores) y [tarjeta_offline_lab.md](docs/tarjeta_offline_lab.md)).*
 
-**Encontrar `<IP_ROBOT>`:**
-- **Standard:** la muestra la pantalla del robot.
-- **Lite:** panel del router, `ssh ubuntu@turtlebot4.local`, o `arp -a` buscando una MAC
-  de Raspberry Pi (`d8:3a:dd`, `dc:a6:32`, `e4:5f:01`).
-- Ya dentro del robot: `hostname -I`.
-
-> ➕ **Extra: alias SSH.** En `~/.ssh/config` (en Windows, `C:\Users\<usuario>\.ssh\config`):
-> ```
-> Host tb4
->   HostName <IP_ROBOT>
->   User ubuntu
->   ServerAliveInterval 15
->   ServerAliveCountMax 4
-> ```
-> Después basta `ssh tb4`. Para entrar sin contraseña: `ssh-keygen -t ed25519` y
-> `ssh-copy-id tb4`.
-
-### 7.2 ➕ Conexión con `tb4_connect.sh`
-
-Configura la terminal de la VM para tu robot en un solo paso:
-
+### 5.2 Conexión con `tb4_connect.sh` (Recomendado)
+Configura tu terminal para interactuar con el robot:
 ```bash
-cd ~/turtleclaude4      # en WSL: cd /mnt/c/Users/<usuario>/turtleclaude4
 source tb4_connect.sh <IP_ROBOT> <DOMAIN_ID>
 ```
+*Prueba multicast y, si no hay respuesta de tópicos clave, conmuta automáticamente a `ROS_STATIC_PEERS`. Guarda la sesión en `~/.tb4_robot`.*
 
-Qué hace:
-1. Carga Jazzy y exporta `ROS_DOMAIN_ID` y `RMW_IMPLEMENTATION`.
-2. Hace ping al robot.
-3. Prueba el descubrimiento por multicast. Si no ve los 4 tópicos clave (`/scan`,
-   `/odom`, `/cmd_vel`, `/oakd/rgb/preview/image_raw`), prueba con `ROS_STATIC_PEERS` y
-   se queda con el modo que funcione.
-4. Guarda la configuración que funcionó en `~/.tb4_robot`.
+- Reconectar al último robot: `source tb4_connect.sh`
+- Limpiar configuración o desconectarse: `source tb4_connect.sh --off`
 
+### 5.3 Conexión SSH directa al robot
 ```bash
-source tb4_connect.sh                    # reconectar al último robot guardado
-source tb4_connect.sh <IP> <ID> peers    # forzar modo: auto | multicast | peers
-source tb4_connect.sh --off              # limpiar (dominio 0, sin peers)
-```
-
-Para que cada terminal nueva arranque ya configurada:
-
-```bash
-echo '[ -f ~/.tb4_robot ] && source ~/.tb4_robot' >> ~/.bashrc
+ssh ubuntu@<IP_ROBOT>     # Contraseña de fábrica: turtlebot4 (cámbiala si el robot sale del lab)
 ```
 
 ---
 
-## 8. Verificar `ROS_DOMAIN_ID`
+## 6. Bringup y verificación de tópicos
 
-Usa el **mismo valor** en la VM y en el TurtleBot:
-
+El servicio `turtlebot4.service` normalmente arranca el bringup de forma automática al encender el robot. Verifica por SSH:
 ```bash
-echo $ROS_DOMAIN_ID
-export ROS_DOMAIN_ID=<DOMAIN_ID>   # valor entre 0 y 101
-source /opt/ros/jazzy/setup.bash   # actualizar variables de entorno
+systemctl is-active turtlebot4.service    # Debe responder "active"
+```
+*(Si no estuviera activo: `ros2 launch turtlebot4_bringup lite.launch.py` o `standard.launch.py`).*
+
+### Checklist rápido de comunicación
+En tu PC ejecuta:
+```bash
+ros2 topic list
 ```
 
-Compruébalo en los dos lados:
+Debes ver los tópicos base: `/scan`, `/odom`, `/cmd_vel` y `/tf` *(la cámara `/oakd/...` aparecerá si el nodo de visión correspondiente está activo)*.
 
-| Dónde | Comando |
-|---|---|
-| VM | `echo $ROS_DOMAIN_ID` |
-| Robot (SSH) | `echo $ROS_DOMAIN_ID` |
+#### Diagnóstico automático con `tb4_check.sh`:
+Valida frecuencias de sensores, Create 3 y desfase de reloj con un solo comando:
+```bash
+./tb4_check.sh <IP_ROBOT>            # Diagnóstico desde la PC
+./tb4_check.sh <IP_ROBOT> --robot    # Diagnóstico completo PC + SSH al Robot
+```
 
-> ➕ **Extra: tres lugares deben coincidir.** La VM, la Raspberry Pi y el Create 3.
-> En el robot, el bringup corre como servicio y **no** lee un `export` hecho en tu sesión
-> SSH. Si el valor del robot no es el correcto, cámbialo con `turtlebot4-setup`
-> ([CONFIGURACION_INICIAL § 3](CONFIGURACION_INICIAL.md#3-ros_domain_id-del-robot)).
+Si algún componente falla, consulta [TROUBLESHOOTING.md](TROUBLESHOOTING.md), y si nada resulta: **llamar a Cortijo 😄 o a Thiago 6️⃣7️⃣**.
 
 ---
 
-## 9. Verificación de comunicación (talker/listener)
+## 7. Pruebas de movimiento (`TwistStamped`)
 
-En el **robot (terminal 1)**:
-```bash
-ros2 run demo_nodes_cpp listener
-```
+En ROS 2 Jazzy, el TurtleBot 4 requiere **`geometry_msgs/msg/TwistStamped`** en `/cmd_vel` (incluye marca de tiempo). Un mensaje `Twist` tradicional no moverá el robot.
 
-En la **VM (terminal 2)**:
-```bash
-ros2 run demo_nodes_cpp talker
-```
-
-✅ Si se ven los mensajes, la comunicación ROS funciona.
-❌ Si no, revisa el `ROS_DOMAIN_ID` ([§8](#8-verificar-ros_domain_id)),
-[TROUBLESHOOTING § 1](TROUBLESHOOTING.md#1-red-y-dds), o llama a **Cortijo** 😎
-
-> Si el robot no tiene los nodos demo (`Package 'demo_nodes_cpp' not found`), instálalos
-> según [CONFIGURACION_INICIAL § 4](CONFIGURACION_INICIAL.md#4-instalación-base-en-el-robot).
-
----
-
-## 10. Bringup y sensores
-
-Luego de conectarte por SSH:
-
-```bash
-ros2 launch turtlebot4_bringup lite.launch.py        # TurtleBot 4 Lite
-ros2 launch turtlebot4_bringup standard.launch.py    # TurtleBot 4 Standard
-```
-
-> ➕ **Extra: el bringup suele estar ya en marcha.** `turtlebot4.service` lo lanza al
-> encender el robot. Antes de lanzarlo a mano, compruébalo para no duplicar nodos:
-> ```bash
-> systemctl is-active turtlebot4.service    # "active": ya corre, no lances otro
-> ```
-
-Al ejecutar `ros2 topic list` deberías ver una lista extensa que incluya:
-
-```
-/battery_state
-/cmd_vel
-/odom
-/scan
-/oakd/rgb/preview/image_raw
-/tf
-...
-```
-
-<details>
-<summary>Lista completa esperada (TurtleBot 4 Lite)</summary>
-
-```
-/battery_state  /cmd_audio  /cmd_lightring  /cmd_vel  /cmd_vel_unstamped
-/diagnostics  /diagnostics_agg  /diagnostics_toplevel_state  /dock_status
-/function_calls  /hazard_detection  /imu  /interface_buttons  /ip
-/joint_states  /joy  /joy/set_feedback  /mouse  /oakd/imu/data
-/oakd/rgb/preview/camera_info  /oakd/rgb/preview/image_raw
-/oakd/rgb/preview/image_raw/{compressed,compressedDepth,theora,zstd}
-/odom  /parameter_events  /robot_description  /rosout  /scan
-/tf  /tf_static  /wheel_status
-```
-El Standard añade tópicos de pantalla y botones (`/hmi/...`).
-</details>
-
-Si no aparecen, llama a Cortijo o revisa [TROUBLESHOOTING § 2](TROUBLESHOOTING.md#2-cámara-y-sensores).
-
-### Activar sensores individualmente
-
-```bash
-ros2 launch turtlebot4_bringup rplidar.launch.py    # LiDAR
-ros2 launch turtlebot4_bringup oakd.launch.py       # Cámara OAK-D
-```
-
-✅ Si escuchas el sonido alegre del robot ("pu puru pupu 🎵"), el bringup se cargó correctamente.
-
----
-
-## 11. ➕ Validar tópicos de cámara OAK-D y LiDAR
-
-Desde la **VM**, antes de trabajar en visión:
-
-| Tópico | Tipo | Comando de validación | Esperado |
-|---|---|---|---|
-| `/oakd/rgb/preview/image_raw` | `sensor_msgs/Image` | `ros2 topic hz /oakd/rgb/preview/image_raw` | Frecuencia > 0 |
-| `/oakd/rgb/preview/image_raw/compressed` | `sensor_msgs/CompressedImage` | `ros2 topic hz /oakd/rgb/preview/image_raw/compressed` | Frecuencia > 0 (mejor por Wi-Fi) |
-| `/oakd/rgb/preview/camera_info` | `sensor_msgs/CameraInfo` | `ros2 topic echo --once /oakd/rgb/preview/camera_info` | Matriz `k` con valores |
-| `/scan` | `sensor_msgs/LaserScan` | `ros2 topic hz /scan` | ~7–8 Hz (RPLIDAR A1) |
-| `/scan` | | `ros2 topic echo --once --no-arr /scan` | `range_min`/`range_max` coherentes |
-| `/odom` | `nav_msgs/Odometry` | `ros2 topic echo --once /odom` | Datos del Create 3 |
-| `/cmd_vel` | `geometry_msgs/TwistStamped` | `ros2 topic info /cmd_vel` | `Type: geometry_msgs/msg/TwistStamped` |
-
-**Versión automática** de toda la tabla, con referencia a TROUBLESHOOTING en cada fallo:
-
-```bash
-./tb4_check.sh <IP_ROBOT>            # desde la VM
-./tb4_check.sh <IP_ROBOT> --robot    # además revisa el robot por SSH (dominio, servicio, USB)
-```
-
-> Si aparecen `/scan` y `/oakd/...` pero **faltan** `/odom` y `/battery_state`, la Raspberry
-> Pi funciona y el problema está en el Create 3:
-> [TROUBLESHOOTING § 1.2](TROUBLESHOOTING.md#12-discrepancias-de-ros_domain_id).
-
----
-
-## 12. Pruebas de movimiento (`TwistStamped`)
-
-En el **TurtleBot**:
-```bash
-ros2 topic echo /cmd_vel
-```
-
-En la **VM**:
+### Control por teclado estándar:
 ```bash
 ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -p stamped:=true
 ```
 
-> ➕ **Extra: por qué `stamped:=true`.** En Jazzy, `/cmd_vel` del TurtleBot 4 es
-> **`geometry_msgs/msg/TwistStamped`** (cabecera con `stamp` y `frame_id`). Un `Twist`
-> simple publicado en `/cmd_vel` **no mueve el robot**. Hay dos opciones:
->
-> | Opción | Tópico | Mensaje |
-> |---|---|---|
-> | Recomendada | `/cmd_vel` | `TwistStamped` (`-p stamped:=true`) |
-> | Compatibilidad | `/cmd_vel_unstamped` | `Twist` (código antiguo) |
->
-> Desde la CLI:
-> ```bash
-> ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/TwistStamped \
->   "{header: {frame_id: base_link}, twist: {linear: {x: 0.1}}}"
-> ```
-> En rclpy: rellena `msg.header.stamp = node.get_clock().now().to_msg()` y
-> `msg.header.frame_id = "base_link"`, y escribe la velocidad en `msg.twist`.
-
-> ➕ **Seguridad.** Empieza lento (0.1 m/s, 1.0 rad/s). El Create 3 no tiene sensores
-> traseros. Evita que dos nodos publiquen en `/cmd_vel` a la vez (un mando emparejado con
-> el robot también publica).
-
----
-
-## 13. Cámara, visión y scripts del repositorio
-
-### Ver la cámara
-
+### O con el script WASD incluido en el repositorio:
 ```bash
-ros2 run rqt_image_view rqt_image_view
+python3 teleop_wasd.py
 ```
+*(Detecta si el tópico requiere `Twist` o `TwistStamped`, usa teclas `W/A/S/D` y frena automáticamente al soltar).*
 
-Selecciona `/oakd/rgb/preview/image_raw`, o `/oakd/rgb/preview/image_raw/compressed`
-si la Wi-Fi va justa.
+---
 
-### ➕ Scripts de este repositorio
+## 8. Visión, cámara y scripts del repositorio
 
-Se ejecutan en la VM/WSL con ROS cargado (§6 o `tb4_connect.sh`):
+### 8.1 Visualizar la cámara OAK-D
+En la Wi-Fi compartida del laboratorio, **utiliza siempre el tópico comprimido** para evitar saturar el ancho de banda y perder datos de LiDAR u odometría:
 
-| Script | Para qué | Uso |
+- **Visor OpenCV integrado (recomendado):**
+  ```bash
+  python3 ver_camara_tb4.py          # Consume /compressed por defecto
+  ```
+- **Con rqt:**
+  ```bash
+  ros2 run rqt_image_view rqt_image_view
+  # Seleccionar: /oakd/rgb/preview/image_raw/compressed
+  ```
+
+### 8.2 Scripts disponibles en este repositorio
+| Script | Función | Comando rápido |
 |---|---|---|
-| `ver_camara_tb4.py` | Visor OpenCV de la OAK-D con FPS. Usa `/compressed` por defecto. Base para tus nodos de visión | `python3 ver_camara_tb4.py` · `--scale 3` · `--topic <tópico>` (cruda: `.../image_raw`) |
-| `ver_lidar_tb4.py` | Vista cenital de `/scan`; marca en rojo los obstáculos frontales a menos de 0.5 m | `python3 ver_lidar_tb4.py` · `--range 6` · `--rot 90` |
-| `teleop_wasd.py` | Teleop WASD; detecta solo si `/cmd_vel` es `Twist` o `TwistStamped`; se detiene al soltar las teclas | `python3 teleop_wasd.py` · `--dry` (no publica) |
+| `tb4_connect.sh` | Configura variables ROS, comprueba ping y activa DDS | `source tb4_connect.sh <IP> <ID>` |
+| `tb4_check.sh` | Valida tópicos clave, Hz y desfase horario de la Pi | `./tb4_check.sh <IP>` |
+| `ver_camara_tb4.py` | Visor OpenCV con conteo de FPS | `python3 ver_camara_tb4.py` |
+| `ver_lidar_tb4.py` | Vista 2D cenital del LiDAR con aviso de obstáculos | `python3 ver_lidar_tb4.py` |
+| `teleop_wasd.py` | Teleoperación por teclado | `python3 teleop_wasd.py` |
 
-Controles de `teleop_wasd.py`: `w`/`s` adelante/atrás · `a`/`d` girar · `q`/`e` avanzar
-girando · `u`/`j` velocidad lineal ± · `i`/`k` velocidad angular ± · espacio/`x` parar ·
-`Ctrl+C` salir.
-
-> Los scripts usan QoS *sensor data* (best effort) para la cámara y el LiDAR. Si no
-> reciben nada en 8 s, avisan por consola: el problema es de red o de DDS (§7 y §8), no
-> del script.
-
-**En tus propios nodos de visión:**
-
-- **QoS.** Suscríbete con `qos_profile_sensor_data`. Con la QoS por defecto (*reliable*), si
-  el publicador es *best effort* la suscripción no da ningún error pero nunca recibe
-  frames. Con `ros2 topic info -v <tópico>` ves la QoS del publicador.
-
-  ```python
-  from rclpy.qos import qos_profile_sensor_data
-  from sensor_msgs.msg import CompressedImage
-
-  self.create_subscription(
-      CompressedImage,
-      '/oakd/rgb/preview/image_raw/compressed',
-      self.image_callback,
-      qos_profile_sensor_data,
-  )
-  # en el callback: cv2.imdecode(np.frombuffer(msg.data, np.uint8), cv2.IMREAD_COLOR)
-  ```
-
-- **Ancho de banda.** Los 3 robots comparten el mismo router. Por Wi-Fi usa siempre
-  `/compressed`. La imagen cruda (`/image_raw`) resérvala para nodos que corran a bordo de
-  la Pi: 3 flujos crudos a la vez saturan la red y se caen `/scan` y `/odom`.
+### 8.3 Recomendaciones para tus nodos de Visión en Python
+1. **Perfil QoS:** La cámara publica con QoS *Sensor Data* (Best Effort). Tu suscriptor debe usar:
+   ```python
+   from rclpy.qos import qos_profile_sensor_data
+   from sensor_msgs.msg import CompressedImage
+   # ...
+   self.create_subscription(CompressedImage, '/oakd/rgb/preview/image_raw/compressed', self.callback, qos_profile_sensor_data)
+   ```
+2. **Decodificación OpenCV en el callback:**
+   ```python
+   cv_image = cv2.imdecode(np.frombuffer(msg.data, np.uint8), cv2.IMREAD_COLOR)
+   ```
 
 ---
 
-## 14. Notas y solución de errores
+## Anexo A. Entornos soportados
 
-- **Cambiar o revisar el dominio ROS:**
-  ```bash
-  echo $ROS_DOMAIN_ID
-  export ROS_DOMAIN_ID=4   # ejemplo; usa el de tu robot
-  ```
-  Usa el mismo valor en la VM y en el TurtleBot.
-- **Actualizar variables de entorno:**
-  ```bash
-  source /opt/ros/jazzy/setup.bash
-  ```
-- **Verificar comunicación:**
-  ```bash
-  ros2 topic list
-  ```
-- **Si algo falla:**
-  - Reinicia el Create 3 (`turtlebot4-setup`, aplicar red, reboot).
-  - Revisa la conexión Wi-Fi y el ping entre VM ↔ TurtleBot.
-  - Ejecuta `./tb4_check.sh <IP_ROBOT> --robot` y consulta [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
-  - Si el robot está desconfigurado: [CONFIGURACION_INICIAL.md](CONFIGURACION_INICIAL.md).
-  - Si nada resulta: **llamar a Cortijo** 😄
+- **Ubuntu 24.04 nativo:** Entorno principal recomendado. Comunicación DDS directa sin configuración extra y soporte completo de GPU NVIDIA para visión artificial.
+- **WSL 2 (Windows 11):** Alternativa para laptops con Windows. Requiere `mirrored` y soporte DDS vía `ROS_STATIC_PEERS` gestionado por `tb4_connect.sh`. Soporta GPU NVIDIA mediante drivers de Windows.
+- **VirtualBox:** Requiere adaptador puente sobre Wi-Fi. Sin aceleración por GPU.
+- **macOS (UTM / Parallels):** VM con Ubuntu 24.04 Desktop (ARM64 en Apple Silicon o x86 en Intel). Ver detalles en el [Anexo D](#anexo-d-trabajar-desde-mac).
 
 ---
-
-## Anexo A. Comparativa de entornos
-
-| Entorno | Descubrimiento DDS con el robot | GPU (CUDA) para visión | Ventanas (rviz, rqt, `cv2.imshow`) |
-|---|---|---|---|
-| **VirtualBox** | Requiere adaptador puente; con NAT no se ven tópicos. El puente sobre Wi-Fi puede fallar | No disponible | Aceleración 3D limitada: rviz y rqt van lentos |
-| **WSL 2** | Requiere `mirrored`, firewall y `ROS_STATIC_PEERS` (§5) | Sí, con el driver NVIDIA de Windows | WSLg (Windows 11) |
-| **Ubuntu nativo** | Funciona sin ajustes | Completa | Nativas |
-
-- **Windows 10** no admite `networkingMode=mirrored`: usa VirtualBox o Ubuntu nativo.
-- **Mac:** VM con Ubuntu 24.04 en modo puente (UTM/Parallels con ARM64 en Apple Silicon).
-  Pasos en el [Anexo D](#anexo-d-trabajar-desde-mac).
-- **Visión pesada** (redes neuronales): requiere GPU, disponible en nativo y en WSL 2.
 
 ## Anexo B. Descubrimiento DDS y varios robots
 
-| Modo | Cómo se activa | Cuándo |
-|---|---|---|
-| **Multicast** (por defecto) | Nada que hacer | VM en puente o Ubuntu nativo, en una red que deja pasar multicast |
-| **Peers estáticos** | `export ROS_STATIC_PEERS=<IP_ROBOT>` o `tb4_connect.sh` | WSL 2, redes con aislamiento de clientes |
-| **Discovery Server** | `turtlebot4-setup`, más la configuración de la PC según el [manual](https://turtlebot.github.io/turtlebot4-user-manual/setup/discovery_server.html) | Muchos robots o redes muy restrictivas. Cambia la configuración del robot: acuérdalo con el docente |
+- **`ROS_DOMAIN_ID`:** Cada robot del laboratorio **debe** tener un ID único (0–101) para que los comandos de un equipo no interfieran con otro robot.
+- **Multicast vs Unicast:** En routers con aislamiento de clientes o bajo WSL 2, el multicast puede presentar pérdidas. `ROS_STATIC_PEERS=<IP_ROBOT>` establece el descubrimiento punto a punto directo.
+- Si cambias de robot o terminas la sesión, usa `source tb4_connect.sh --off` para restablecer el entorno.
 
-**Varios robots en el laboratorio:**
-- Un `ROS_DOMAIN_ID` **distinto por robot**. Si no, todos ven todos los tópicos y un
-  `/cmd_vel` puede mover el robot de otro grupo.
-- Lleva un registro de IP, ID y grupo. `~/.tb4_robot` guarda el último robot usado.
-- Con muchos robots en la misma Wi-Fi, usa `/compressed` para la cámara.
+---
 
 ## Anexo C. Estructura del repositorio
 
-```
+```text
 turtleclaude4/
-├── README.md                  ← guía de trabajo diario (este documento)
-├── CONFIGURACION_INICIAL.md   ← aprovisionamiento del robot desde cero
-├── TROUBLESHOOTING.md         ← diagnóstico por síntomas y checklist
-├── tb4_connect.sh             ← configura la terminal para un robot (multicast → peers)
-├── tb4_check.sh               ← checklist automático (PC y, opcionalmente, robot)
-├── ver_camara_tb4.py          ← visor OAK-D
-├── ver_lidar_tb4.py           ← visor LiDAR
-├── teleop_wasd.py             ← teleop por teclado
-├── docs/                      ← bitácora de un robot concreto (valores de ejemplo)
-└── _legacy/                   ← mando PS4 y planes antiguos (solo referencia)
+├── README.md                  ← Guía principal de trabajo diario
+├── README.original.md         ← Copia de respaldo de la versión extensa anterior
+├── CONFIGURACION_INICIAL.md   ← Setup inicial del robot desde cero
+├── TROUBLESHOOTING.md         ← Diagnóstico y solución de problemas
+├── tb4_connect.sh             ← Configuración de conexión y DDS (soporta --off)
+├── tb4_check.sh               ← Checklist de sensores, tópicos y reloj
+├── ver_camara_tb4.py          ← Visor OpenCV de cámara OAK-D (/compressed)
+├── ver_lidar_tb4.py           ← Visor cenital de LiDAR
+├── teleop_wasd.py             ← Teleoperación por teclado
+├── docs/                      ← Documentación auxiliar y guías de campo
+│   ├── guia_conexion_turtlebot4.md
+│   └── tarjeta_offline_lab.md ← Checklist de bolsillo para el laboratorio sin internet
+└── _legacy/                   ← Scripts antiguos y referencias previas
 ```
+
+---
 
 ## Anexo D. Trabajar desde Mac
 
-ROS 2 Jazzy y los paquetes del TurtleBot 4 no tienen soporte en macOS: se trabaja dentro
-de una **VM con Ubuntu 24.04**. Una vez dentro, la guía es la misma desde la
-[sección 2](#2-preparar-ubuntu-para-ros-2-jazzy).
+ROS 2 Jazzy no tiene soporte nativo en macOS. Se debe trabajar dentro de una VM con **Ubuntu 24.04 Desktop**.
 
-**¿Qué Mac tengo?** Menú Apple → *Acerca de este Mac*: "Chip Apple M…" es Apple Silicon;
-"Procesador Intel" es Intel.
+### D.1 Mac con Apple Silicon (M1/M2/M3/M4)
+1. Instala **[UTM](https://mac.getutm.app)**.
+2. Descarga **Ubuntu 24.04 Desktop ARM64** ([enlace ISO ARM64](https://cdimage.ubuntu.com/releases/24.04/release/)). *(Nota: la ISO x86_64 habitual no sirve).*
+3. En UTM: Crear VM → **Virtualizar** (Linux) con al menos 4 núcleos y 8 GB RAM.
+4. **Configuración de red:** En Ajustes de la VM → *Red* → Selecciona **Puente (Bridged)** en la interfaz Wi-Fi (`en0`).
+5. Sigue los pasos del [Paso 1](#1-instalar-ros-2-jazzy) en adelante. Jazzy cuenta con paquetes ARM64 completos.
 
-### D.1 Mac con Apple Silicon (M1–M4)
+### D.2 Mac con procesador Intel
+Utiliza VirtualBox o UTM con la ISO estándar x86_64 y modo de red en Adaptador puente.
 
-1. Instala **[UTM](https://mac.getutm.app)** (gratis) o Parallels Desktop.
-2. Descarga **Ubuntu 24.04 Desktop ARM64**
-   ([`ubuntu-24.04.x-desktop-arm64.iso`](https://cdimage.ubuntu.com/releases/24.04/release/)).
-   La ISO amd64 normal **no** sirve.
-3. En UTM: *Crear nueva VM* → **Virtualizar** (no "Emular") → Linux → la ISO.
-   RAM 8 GB, 4 núcleos, disco 30 GB o más.
-4. **Red en modo puente**, antes de arrancar: VM → Editar → Red →
-   *Modo de red*: **Puente (avanzado)**, interfaz **en0** (Wi-Fi). En Parallels:
-   Hardware → Red → Origen: **Wi-Fi** (puente).
-   Si macOS pide permiso de **Red local** para UTM/Parallels, acéptalo.
-5. Instala Ubuntu. Después, para portapapeles y ajuste de pantalla en UTM:
-   ```bash
-   sudo apt install -y spice-vdagent spice-webdavd
-   ```
-6. Opcional: en UTM → Pantalla, elige `virtio-gpu-gl-pci` para que rviz2 vaya más fluido.
-7. Sigue las secciones [2](#2-preparar-ubuntu-para-ros-2-jazzy) a
-   [4](#4-instalar-paquetes-del-turtlebot-4) y [6](#6--variables-de-entorno-en-ros-2-jazzy).
-   ROS 2 Jazzy publica paquetes ARM64: los comandos son idénticos.
-
-### D.2 Mac con Intel
-
-Igual que la [sección 1](#1-máquina-virtual-con-ubuntu-2404): VirtualBox (o UTM) con la
-ISO normal de Ubuntu 24.04 y **Adaptador puente** sobre Wi-Fi.
-
-### D.3 Conectar con el robot
-
-- Comprueba que la VM tiene una IP de la **misma red que el robot** (`ip a`). Si ves
-  `10.0.2.x` o `192.168.64.x`, sigue en NAT: revisa el paso 4.
-- Usa `source tb4_connect.sh <IP_ROBOT>` ([§7.2](#72--conexión-con-tb4_connectsh)): si el
-  multicast no pasa por el puente Wi-Fi de macOS (ocurre a menudo), cambia solo a
-  `ROS_STATIC_PEERS`.
-- Algunas redes (Wi-Fi corporativa o universitaria) bloquean el modo puente. En ese caso,
-  usa una red propia con el robot (router del laboratorio o hotspot).
-
-### D.4 Sin VM: solo SSH
-
-Para comprobaciones rápidas no hace falta la VM. Desde la **Terminal de macOS**:
-
-```bash
-ssh ubuntu@<IP_ROBOT>
-```
-
-Dentro del robot ya están ROS 2 y los paquetes: puedes ejecutar `ros2 topic list`, la
-teleop por teclado o los scripts sin ventanas. Lo que abre ventanas (rviz2,
-`rqt_image_view`, `cv2.imshow`) necesita la VM.
-
-### D.5 Limitaciones
-
-- Sin GPU NVIDIA/CUDA: la visión pesada con redes neuronales va lenta o no es viable.
-- rviz2 y rqt funcionan, pero algo más lentos que en Ubuntu nativo.
+### D.3 Conexión rápida (Solo SSH)
+Si solo requieres teleoperación por teclado o ejecutar scripts sin ventanas desde macOS, conéctate directamente desde la terminal con `ssh ubuntu@<IP_ROBOT>`.
