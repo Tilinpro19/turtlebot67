@@ -84,7 +84,7 @@ class Sender:
             time.sleep(0.2)
         self.close()
         sys.exit(f"No aparece {what}. Revisa: misma red, ping al robot, "
-                 "ROS_DOMAIN_ID=67 y ROS_STATIC_PEERS.")
+                 "mismo ROS_DOMAIN_ID que el robot y ROS_STATIC_PEERS.")
 
     def send(self, linear, angular):
         if self.dry:

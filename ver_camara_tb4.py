@@ -78,7 +78,7 @@ def main():
                 cv2.imshow(win, img)
             elif state["msg"] is None and not warned and time.monotonic() - t_start > 8:
                 warned = True
-                print(f"Sin imagen en {args.topic}. Revisa: misma red, ROS_DOMAIN_ID=67, "
+                print(f"Sin imagen en {args.topic}. Revisa: misma red, mismo ROS_DOMAIN_ID que el robot, "
                       "ROS_STATIC_PEERS y 'ros2 topic list | grep image'.")
             key = cv2.waitKey(1) & 0xFF
             try:

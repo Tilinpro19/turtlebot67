@@ -1,6 +1,8 @@
-# Troubleshooting · TurtleBot 4 Lite (ROS 2 Jazzy)
+# Troubleshooting · TurtleBot 4 (ROS 2 Jazzy)
 
-Guía de fallos frecuentes en el laboratorio. Ejecuta primero el
+Guía de fallos frecuentes en el laboratorio, válida para TurtleBot 4 Lite y Standard.
+El primer recurso es siempre el flujo base del [README](README.md) (guía de Cortijo);
+lo de aquí recoge lo aprendido cuando ese flujo no bastó. Ejecuta primero el
 [checklist rápido](#3-checklist-rápido-de-diagnóstico) y luego ve a la sección del síntoma.
 
 Convenciones: **[PC]** = PC/VM de desarrollo · **[ROBOT]** = SSH a la Raspberry Pi.
@@ -32,7 +34,7 @@ ros2 daemon stop
 ros2 topic list
 ```
 
-Fue la causa real verificada el 2026-09-30 con WSL. Si funciona, añádelo a `~/.bashrc`.
+Fue la causa real en el caso WSL documentado en `docs/`. Si funciona, añádelo a `~/.bashrc`.
 
 Causas específicas del entorno:
 
@@ -76,7 +78,8 @@ Tras reiniciar solo la Pi, el Create 3 puede tardar **2–3 min** en volver a pu
 
 ### 1.4 El robot no aparece en ninguna red
 
-- El TB4 Lite no tiene pantalla: busca la IP por red (`arp -a`, MAC `d8:3a:dd…`, panel del router, `turtlebot4.local`).
+- **Standard**: la IP aparece en la pantalla del robot.
+- **Lite** (sin pantalla): busca la IP por red (`arp -a` con MAC de Raspberry Pi `d8:3a:dd`/`dc:a6:32`/`e4:5f:01`, panel del router, `turtlebot4.local`).
 - Si perdiste la Wi-Fi: cable Ethernet (`192.168.185.3`), o monitor micro-HDMI + teclado en la Pi, y luego `turtlebot4-setup`.
 - SSH que se congela a ratos: ahorro de energía de la Wi-Fi.
   ```bash
@@ -97,7 +100,7 @@ journalctl -u turtlebot4.service -n 50 --no-pager
 ros2 node list
 ```
 
-Si lanzaste `lite.launch.py` a mano **y** el servicio está activo, hay nodos duplicados:
+Si lanzaste `lite.launch.py` / `standard.launch.py` a mano **y** el servicio está activo, hay nodos duplicados:
 detén uno de los dos (`sudo systemctl restart turtlebot4.service` y no relances a mano).
 
 ### 2.1 OAK-D no publica imagen
@@ -143,7 +146,7 @@ Arreglos:
 ### 2.4 Reloj desfasado (tf / fusión de sensores)
 
 La Pi no tiene RTC y el Create 3 conserva su propio reloj: los *stamps* pueden marcar otra
-fecha (verificado: `/odom` en 2025). Afecta a tf, `message_filters` y a la fusión de sensores.
+fecha (visto en el laboratorio: `/odom` con fecha de un año antes). Afecta a tf, `message_filters` y a la fusión de sensores.
 
 ```bash
 # [ROBOT] con internet:
