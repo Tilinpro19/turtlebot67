@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CycloneDDS xmlns="https://cdds.io/config">
+    <Domain id="any">
+        <General>
+            <Interfaces>
+                <NetworkInterface name="eth2" priority="default" multicast="default"/>
+            </Interfaces>
+            <AllowMulticast>true</AllowMulticast>
+        </General>
+        <Discovery>
+            <Peers>
+                <Peer address="10.60.189.52"/>
+            </Peers>
+        </Discovery>
+    </Domain>
+</CycloneDDS>
