@@ -63,18 +63,12 @@ ejemplo, no como configuración.
 
 ## 1. Entorno de desarrollo (Ubuntu 24.04)
 
-Lo único imprescindible es **Ubuntu 24.04 con ROS 2 Jazzy**, en la misma red que el
-robot. Dónde corra ese Ubuntu es elección tuya:
+Necesitas **Ubuntu 24.04 con ROS 2 Jazzy** en la misma red que el robot. Elige una
+de estas opciones:
 
-| Opción | GPU para visión (CUDA, YOLO…) | Red con el robot | Ventanas (rviz, rqt, `cv2.imshow`) | Recomendado para |
-|---|---|---|---|---|
-| **A. WSL2** (Windows) | ✅ CUDA con el driver NVIDIA de Windows | ⚠️ `mirrored` + `ROS_STATIC_PEERS` (lo automatiza `tb4_connect.sh`) | ✅ WSLg | **Uso diario en Windows** |
-| **B. Ubuntu nativo** (dual boot) | ✅ Completa | ✅ Sin ajustes | ✅ | Máximo rendimiento y menos problemas DDS |
-| **C. VirtualBox** (guía del curso) | ❌ Sin CUDA, 3D lento | ⚠️ Adaptador puente | ⚠️ rviz/rqt lentos | Seguir el curso al pie de la letra |
-
-Para Computer Vision, el procesamiento de imagen ocurre en tu PC: con modelos de
-detección conviene tener GPU, y VirtualBox no puede usarla. Elige **A** o **B** si
-puedes.
+- **A. WSL2** (Windows)
+- **B. Ubuntu nativo**
+- **C. VirtualBox**
 
 ### 1.A WSL2 (Windows 10/11)
 
@@ -110,7 +104,7 @@ puedes.
 Instala Ubuntu 24.04 desde la [ISO oficial](https://releases.ubuntu.com/24.04) (dual
 boot o equipo dedicado) y sigue en la [sección 2](#2-preparar-ubuntu-e-instalar-ros-2-jazzy).
 
-### 1.C VirtualBox (flujo del curso)
+### 1.C VirtualBox
 
 1. Instala [VirtualBox](https://www.virtualbox.org).
 2. Crea una VM: Linux → Ubuntu (64-bit), **RAM ≥ 4 GB** (recomendado 8 GB),
