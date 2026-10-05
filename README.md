@@ -37,7 +37,7 @@ Convenciones: **[PC]** = tu PC de desarrollo (Ubuntu nativo, WSL o VM) · **[ROB
 - [¿Qué entorno usas?](#parte-i-preparar-tu-entorno-una-sola-vez-con-internet) (Ubuntu nativo como estándar; WSL 2, VM o Mac)
 - [1. Instalar ROS 2 Jazzy](#1-instalar-ros-2-jazzy)
 - [2. Instalar paquetes del TurtleBot 4 y visión](#2-instalar-paquetes-del-turtlebot-4-y-visión)
-- [3. Configuración para entornos virtuales o Windows](#3-configuración-para-entornos-virtuales-o-windows) (WSL 2 / VirtualBox)
+- [3. Configuración para entornos virtuales o Windows](#3-configuración-para-entornos-virtuales-o-windows) ([WSL 2 paso a paso](#31-wsl-2-en-windows-11) / VirtualBox)
 - [4. Variables de entorno](#4-variables-de-entorno)
 
 **Parte II: Flujo en el laboratorio (cada sesión)**
@@ -56,7 +56,7 @@ Convenciones: **[PC]** = tu PC de desarrollo (Ubuntu nativo, WSL o VM) · **[ROB
 
 El entorno de referencia y más directo es **Ubuntu 24.04 nativo**. Si trabajas desde otro sistema:
 - **Ubuntu 24.04 nativo:** Pasa directamente al [Paso 1](#1-instalar-ros-2-jazzy).
-- **Windows 11 (WSL 2):** Sigue los pasos de instalación en Ubuntu y revisa los ajustes de red en el [Paso 3.1](#31-wsl-2-en-windows-11).
+- **Windows 11 (WSL 2):** Primero instala y configura WSL 2 con el [Paso 3.1](#31-wsl-2-en-windows-11) (guía paso a paso) y después vuelve al [Paso 1](#1-instalar-ros-2-jazzy).
 - **Windows 10 / VirtualBox:** Configura la VM con **Adaptador puente** ([Paso 3.2](#32-virtualbox-windows-10-o-alternativa)).
 - **macOS:** Instala Ubuntu 24.04 ARM64/Intel en VM (UTM o Parallels) ([Anexo D](#anexo-d-trabajar-desde-mac)).
 
@@ -104,21 +104,67 @@ sudo apt update && sudo apt install -y \
 ## 3. Configuración para entornos virtuales o Windows
 
 ### 3.1 WSL 2 en Windows 11
-Para que ROS 2 en WSL 2 descubra al robot a través de la red de Windows:
 
-1. **Modo de red espejo (`mirrored`):**
-   Crea o edita en Windows el archivo `C:\Users\<tu-usuario>\.wslconfig`:
-   ```ini
-   [wsl2]
-   networkingMode=mirrored
-   ```
-   Aplica los cambios en PowerShell con `wsl --shutdown` y reabre Ubuntu.
-2. **Permitir tráfico en Hyper-V (PowerShell como Administrador):**
-   ```powershell
-   Set-NetFirewallHyperVVMSetting -Name '{40E0AC32-46A5-438A-A0B2-2B479E8F2E90}' -DefaultInboundAction Allow
-   ```
-3. **Perfil de red Privado en Windows:** Configuración → Red e Internet → Wi-Fi → red del lab → marcar como **Privada**.
-4. **Descubrimiento DDS:** Si el router o WSL tienen pérdidas con multicast, el script `tb4_connect.sh` conmuta de forma transparente a unicast (`ROS_STATIC_PEERS`).
+WSL 2 (*Windows Subsystem for Linux*) ejecuta un Ubuntu real dentro de Windows, sin máquina
+virtual aparte. Hazlo **antes del [Paso 1](#1-instalar-ros-2-jazzy)** y **con internet**.
+
+**Requisitos:** Windows 11 22H2 o superior (el modo de red `mirrored` no existe en Windows 10) y
+la virtualización activada en la BIOS/UEFI (*Intel VT-x* / *AMD-V*; en el Administrador de
+tareas → Rendimiento → CPU debe decir "Virtualización: Habilitado").
+
+**Paso 1. Instalar WSL y Ubuntu 24.04** (PowerShell **como Administrador**):
+```powershell
+wsl --install -d Ubuntu-24.04
+```
+Reinicia Windows si te lo pide. Al abrir "Ubuntu 24.04" desde el menú Inicio por primera vez,
+te pedirá crear un **usuario y contraseña de Linux** (los usará `sudo`; no tienen que coincidir
+con los de Windows).
+
+**Paso 2. Comprobar que es WSL 2 y está actualizado** (PowerShell):
+```powershell
+wsl --update
+wsl -l -v          # Ubuntu-24.04 debe mostrar VERSION 2
+```
+Si muestra `1`: `wsl --set-version Ubuntu-24.04 2`.
+
+**Paso 3. Red espejo (`mirrored`)** para que ROS 2 vea al robot como si fuera tu propio Windows.
+Crea o edita el archivo `%USERPROFILE%\.wslconfig` (p. ej. `notepad $env:USERPROFILE\.wslconfig`):
+```ini
+[wsl2]
+networkingMode=mirrored
+```
+Aplica con `wsl --shutdown` y vuelve a abrir Ubuntu. Comprueba dentro de Ubuntu con `ip -br a`:
+debe aparecer la misma IP que tiene Windows en el Wi-Fi.
+
+**Paso 4. Permitir tráfico entrante en el firewall de Hyper-V** (PowerShell **como Administrador**):
+```powershell
+Set-NetFirewallHyperVVMSetting -Name '{40E0AC32-46A5-438A-A0B2-2B479E8F2E90}' -DefaultInboundAction Allow
+```
+Si responde "Acceso denegado", la ventana no era de Administrador.
+
+**Paso 5. Perfil de red Privado** (en el laboratorio, ya conectado a `Lab_Computech_<X>_5G`):
+Configuración → Red e Internet → Wi-Fi → la red → **Red privada**.
+
+**Paso 6. Clonar el repositorio dentro de Linux** (terminal de Ubuntu):
+```bash
+cd ~ && git clone https://github.com/Tilinpro19/turtlebot67.git turtleclaude4
+```
+Trabaja siempre en `~/` y no en `/mnt/c/...`: es mucho más rápido y evita que Windows convierta
+los finales de línea a CRLF, lo que rompe los scripts `.sh` (`bad interpreter: /bin/bash^M`).
+
+**Paso 7. Continuar con ROS:** sigue el [Paso 1](#1-instalar-ros-2-jazzy), el [Paso 2](#2-instalar-paquetes-del-turtlebot-4-y-visión)
+y el [Paso 4](#4-variables-de-entorno) dentro de Ubuntu. Las ventanas gráficas (RViz, `rqt`, OpenCV)
+funcionan directamente gracias a WSLg; no hace falta instalar un servidor X.
+
+> **Descubrimiento DDS:** Aun con `mirrored`, el multicast puede perderse en WSL. `source tb4_connect.sh`
+> lo detecta y cambia solo a unicast (`ROS_STATIC_PEERS`). Más casos en [TROUBLESHOOTING § 1.1](TROUBLESHOOTING.md#11-la-pc-no-ve-los-tópicos-del-robot-ros2-topic-list-solo-muestra-parameter_events-y-rosout).
+
+| Comando útil (PowerShell) | Para qué |
+|---|---|
+| `wsl` | Abrir Ubuntu en la terminal actual |
+| `wsl --shutdown` | Reiniciar WSL (necesario tras editar `.wslconfig`) |
+| `wsl -l -v` | Ver distros instaladas y su versión |
+| `explorer.exe .` (dentro de Ubuntu) | Abrir la carpeta actual de Linux en el Explorador de Windows |
 
 ### 3.2 VirtualBox (Windows 10 o alternativa)
 - En Configuración de la VM → **Red**: Cambia NAT a **Adaptador puente (Bridged)** seleccionando la interfaz Wi-Fi real. Con NAT el robot no podrá ser descubierto por ROS 2.

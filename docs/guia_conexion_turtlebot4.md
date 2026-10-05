@@ -73,6 +73,9 @@ hostname; hostname -I
 
 ## 2. Preparar tu PC (Windows + WSL 2)
 
+> Versión resumida para este robot. La guía completa paso a paso (requisitos, firewall,
+> perfil de red, dónde clonar el repo) está en [README § 3.1](../README.md#31-wsl-2-en-windows-11).
+
 ### 2.1 Instalar Ubuntu 24.04 en WSL (PowerShell normal; puede pedir reinicio)
 ```powershell
 wsl --install -d Ubuntu-24.04
