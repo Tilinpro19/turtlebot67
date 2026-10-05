@@ -143,4 +143,4 @@ ros2 node list; ros2 topic list
 Si las 3 vías funcionan, el robot queda "pulido" en conectividad.
 
 Después de esto se retoma el plan de evasión de obstáculos
-(`docs/superpowers/plans/2026-07-09-turtlebot4-obstacle-avoidance.md`).
+(`_legacy/superpowers/plans/2026-07-09-turtlebot4-obstacle-avoidance.md`).

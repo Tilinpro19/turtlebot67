@@ -89,4 +89,4 @@ Con eso: `ssh tb4`.
 - No borres `Lab_Computech_3_5G` del robot; solo añade redes nuevas.
 - El Lite no tiene pantalla: la IP se busca por red (paso B3).
 - WSL entra como root (sin clave); no hace falta `sudo`.
-- Plan de evasión pendiente: `docs/superpowers/plans/2026-07-09-turtlebot4-obstacle-avoidance.md`.
+- Plan de evasión pendiente: `_legacy/superpowers/plans/2026-07-09-turtlebot4-obstacle-avoidance.md`.

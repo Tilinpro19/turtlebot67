@@ -16,3 +16,8 @@ log/
 
 # Notas con credenciales en texto plano (no versionar)
 SPOILER_carta_de_suicidio_turtlebot2025.txt
+
+# Carpetas ignoradas
+.claude/
+_legacy/
+legacy/
