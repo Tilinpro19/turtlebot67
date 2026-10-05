@@ -26,7 +26,7 @@ Valores que debes sustituir:
 ## Índice
 
 0. [Estructura del repositorio](#0-estructura-del-repositorio)
-1. [Entorno de desarrollo (WSL2 / nativo / VirtualBox)](#1-entorno-de-desarrollo-ubuntu-2404)
+1. [Entorno de desarrollo](#1-entorno-de-desarrollo)
 2. [Preparar Ubuntu e instalar ROS 2 Jazzy](#2-preparar-ubuntu-e-instalar-ros-2-jazzy)
 3. [Paquetes del TurtleBot 4 en la VM](#3-paquetes-del-turtlebot-4-en-la-vm)
 4. [Configurar y conectar el TurtleBot 4](#4-configurar-y-conectar-el-turtlebot-4)
@@ -36,6 +36,8 @@ Valores que debes sustituir:
 7. [Movimiento y teleoperación (`TwistStamped`)](#7-movimiento-y-teleoperación-twiststamped)
 8. [Cámara y visión](#8-cámara-y-visión)
 9. [Herramientas de este repositorio](#9-herramientas-de-este-repositorio)
+
+Anexo A. [Entornos alternativos (WSL2 y VirtualBox)](#anexo-a-entornos-alternativos-wsl2-y-virtualbox)
 
 ---
 
@@ -61,64 +63,15 @@ ejemplo, no como configuración.
 
 ---
 
-## 1. Entorno de desarrollo (Ubuntu 24.04)
+## 1. Entorno de desarrollo
 
-Necesitas **Ubuntu 24.04 con ROS 2 Jazzy** en la misma red que el robot. Elige una
-de estas opciones:
+Instala **Ubuntu 24.04 LTS** de forma nativa (arranque dual o equipo dedicado) desde la
+[ISO oficial](https://releases.ubuntu.com/24.04) y continúa en la
+[sección 2](#2-preparar-ubuntu-e-instalar-ros-2-jazzy).
 
-- **A. WSL2** (Windows)
-- **B. Ubuntu nativo**
-- **C. VirtualBox**
-
-### 1.A WSL2 (Windows 10/11)
-
-1. PowerShell **como administrador**:
-   ```powershell
-   wsl --install -d Ubuntu-24.04
-   ```
-2. Red espejo, imprescindible para DDS. Crea `C:\Users\<usuario>\.wslconfig`:
-   ```ini
-   [wsl2]
-   networkingMode=mirrored
-   ```
-   y aplica con `wsl --shutdown`.
-3. Firewall de Hyper-V: permite tráfico entrante a WSL (PowerShell **administrador**):
-   ```powershell
-   Set-NetFirewallHyperVVMSetting -Name '{40E0AC32-46A5-438A-A0B2-2B479E8F2E90}' -DefaultInboundAction Allow
-   ```
-4. Marca la red Wi-Fi del laboratorio como **Privada** en Windows
-   (Configuración → Red → Wi-Fi → la red → Tipo de perfil).
-5. Abre Ubuntu (`wsl -d Ubuntu-24.04`) y sigue desde la [sección 2](#2-preparar-ubuntu-e-instalar-ros-2-jazzy).
-
-> 💡 **Ventanas gráficas.** WSLg ya viene con Windows 11: `rqt_image_view`, `rviz2` y
-> `cv2.imshow` abren ventanas sin configurar nada.
-> **GPU.** Con una NVIDIA, instala solo el driver de Windows y comprueba `nvidia-smi`
-> dentro de WSL; **no** instales drivers NVIDIA dentro de Ubuntu.
-
-> 💡 **Multicast en WSL.** Aun en modo `mirrored`, el descubrimiento por multicast es
-> poco fiable (verificado: 0 tópicos en 30 s sin peers, descubrimiento en ~1 s con
-> `ROS_STATIC_PEERS`). `tb4_connect.sh` (§4.5) lo detecta y lo corrige solo.
-
-### 1.B Ubuntu nativo
-
-Instala Ubuntu 24.04 desde la [ISO oficial](https://releases.ubuntu.com/24.04) (dual
-boot o equipo dedicado) y sigue en la [sección 2](#2-preparar-ubuntu-e-instalar-ros-2-jazzy).
-
-### 1.C VirtualBox
-
-1. Instala [VirtualBox](https://www.virtualbox.org).
-2. Crea una VM: Linux → Ubuntu (64-bit), **RAM ≥ 4 GB** (recomendado 8 GB),
-   **disco ≥ 20 GB**, ISO de [Ubuntu 24.04](https://releases.ubuntu.com/24.04).
-3. Instala Ubuntu y las **Guest Additions**.
-4. Actualiza:
-   ```bash
-   sudo apt update && sudo apt upgrade -y
-   sudo reboot
-   ```
-
-> 💡 **Red de la VM en modo puente.** En VirtualBox → Configuración → Red, pon el
-> adaptador en **Adaptador puente** sobre la interfaz Wi-Fi real. Con **NAT** (por
-> defecto) el ping al robot puede funcionar, pero DDS no descubre los tópicos.
+> **Opcional:** si no puedes instalar Ubuntu nativo, usa **WSL2** o **VirtualBox**
+> siguiendo el [Anexo A](#anexo-a-entornos-alternativos-wsl2-y-virtualbox); luego
+> continúa en la sección 2.
 
 En el resto de la guía, **"VM"** significa tu entorno de desarrollo, sea cual sea.
 
@@ -536,3 +489,61 @@ Scripts independientes (sin paquete colcon) para ejecutar en la VM con ROS 2 car
 | `ver_lidar_tb4.py` | Vista cenital de `/scan`; marca en rojo obstáculos frontales < 0.5 m | `python3 ver_lidar_tb4.py --range 6 --rot 90` |
 
 Si no ven datos, el problema es de red/DDS, no del script → [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+
+---
+
+## Anexo A. Entornos alternativos (WSL2 y VirtualBox)
+
+### A.1 WSL2 (Windows 11)
+
+1. PowerShell **como administrador**:
+   ```powershell
+   wsl --install -d Ubuntu-24.04
+   ```
+2. Red espejo, imprescindible para DDS. Crea `C:\Users\<usuario>\.wslconfig`:
+   ```ini
+   [wsl2]
+   networkingMode=mirrored
+   ```
+   y aplica con `wsl --shutdown`.
+3. Firewall de Hyper-V: permite tráfico entrante a WSL (PowerShell **administrador**):
+   ```powershell
+   Set-NetFirewallHyperVVMSetting -Name '{40E0AC32-46A5-438A-A0B2-2B479E8F2E90}' -DefaultInboundAction Allow
+   ```
+4. Marca la red Wi-Fi del laboratorio como **Privada** en Windows
+   (Configuración → Red → Wi-Fi → la red → Tipo de perfil).
+5. Abre Ubuntu (`wsl -d Ubuntu-24.04`) y sigue desde la [sección 2](#2-preparar-ubuntu-e-instalar-ros-2-jazzy).
+
+> 💡 **Ventanas gráficas.** WSLg ya viene con Windows 11: `rqt_image_view`, `rviz2` y
+> `cv2.imshow` abren ventanas sin configurar nada.
+> **GPU.** Con una NVIDIA, instala solo el driver de Windows y comprueba `nvidia-smi`
+> dentro de WSL; **no** instales drivers NVIDIA dentro de Ubuntu.
+
+### A.2 VirtualBox
+
+1. Instala [VirtualBox](https://www.virtualbox.org).
+2. Crea una VM: Linux → Ubuntu (64-bit), **RAM ≥ 4 GB** (recomendado 8 GB),
+   **disco ≥ 20 GB**, ISO de [Ubuntu 24.04](https://releases.ubuntu.com/24.04).
+3. Instala Ubuntu y las **Guest Additions**.
+4. Actualiza:
+   ```bash
+   sudo apt update && sudo apt upgrade -y
+   sudo reboot
+   ```
+
+> 💡 **Red de la VM en modo puente.** En VirtualBox → Configuración → Red, pon el
+> adaptador en **Adaptador puente** sobre la interfaz Wi-Fi real. Con **NAT** (por
+> defecto) el ping al robot puede funcionar, pero DDS no descubre los tópicos.
+
+### A.3 Limitaciones de cada entorno
+
+| Entorno | Descubrimiento DDS con el robot | GPU (CUDA) para visión | Ventanas (rviz, rqt, `cv2.imshow`) |
+|---|---|---|---|
+| **Ubuntu nativo** | Funciona sin ajustes | Completa | Nativas |
+| **WSL2** | Requiere `mirrored`, firewall y `ROS_STATIC_PEERS` (lo automatiza `tb4_connect.sh`). Multicast poco fiable (verificado: 0 tópicos en 30 s sin peers, ~1 s con peers) | Sí, con el driver NVIDIA de Windows | WSLg (Windows 11) |
+| **VirtualBox** | Requiere adaptador puente; con NAT no se ven los tópicos. El puente sobre Wi-Fi puede fallar | No disponible | Aceleración 3D limitada: rviz y rqt van lentos |
+
+Notas:
+- **WSL2 en Windows 10:** no admite `networkingMode=mirrored`; en ese caso usa VirtualBox o Ubuntu nativo.
+- **Mac con Apple Silicon:** VirtualBox no es una opción práctica; usa UTM o Parallels con Ubuntu 24.04 ARM64 en modo puente.
+- **Procesamiento de visión pesado** (detección con redes neuronales): requiere GPU, disponible en nativo y WSL2.
